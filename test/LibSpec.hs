@@ -1,0 +1,116 @@
+{-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
+module LibSpec
+  ( spec
+  ) where
+
+import Lib
+
+import Test.Hspec
+
+import qualified Data.Map.Strict as Map
+
+import Data.Set (Set)
+import Data.Tree (Tree(..))
+
+import qualified LinkedTree
+import qualified TypeDef
+import qualified TypeTree
+
+import Link (Link(..))
+import LinkedTree (LinkedTree(..))
+import Type
+import TypeDef (TypeDef(..))
+import TypeTree (TypeTree(..))
+import Utils (fromRight)
+
+spec :: Spec
+spec =
+  describe "merge" $
+    -- [Int]
+   do
+    let seqDef :: TypeDef (Set Type) =
+          TypeDef
+            (Node "root" [Node "x" []])
+            (Map.fromList [("root", [RigidType Seq]), ("x", [RigidType Int])])
+    -- Int -> Int
+    let incDef :: TypeDef (Set Type) =
+          TypeDef
+            (Node "root" [Node "x" [], Node "x" []])
+            (Map.fromList [("root", [RigidType Fun]), ("x", [RigidType Int])])
+    -- [a] -> a
+    let headDef =
+          TypeDef
+            (Node "root" [Node "seq" [Node "x" []], Node "x" []])
+            (Map.fromList
+               [("root", [RigidType Fun]), ("seq", [RigidType Seq]), ("x", [])])
+      -- (b -> c) -> (a -> b) -> (a -> c)
+    let composeDef =
+          TypeDef
+            (Node
+               "root"
+               [ Node "fbc" [Node "b" [], Node "c" []]
+               , Node
+                   "f1node"
+                   [ Node "fab" [Node "a" [], Node "b" []]
+                   , Node "fac" [Node "a" [], Node "c" []]
+                   ]
+               ])
+            (Map.fromList
+               [ ("root", [RigidType Fun])
+               , ("fbc", [RigidType Fun])
+               , ("fab", [RigidType Fun])
+               , ("fac", [RigidType Fun])
+               , ("f1node", [RigidType Fun])
+               , ("a", [])
+               , ("b", [])
+               , ("c", [])
+               ])
+    let (Right [seq, inc, compose, head]) =
+          mapM
+            TypeDef.intoTypeTree
+            ([seqDef, incDef, composeDef, headDef] :: [TypeDef (Set Type)])
+      -- merge with arguments flipped to aid composition.
+    let merge' guest path host = TypeTree.merge host path guest
+    let apply' = flip TypeTree.apply
+    describe "merge" $ do
+      it "head . inc" $
+        (pure compose >>= merge' inc [0] >>= merge' head [1, 0]) `shouldBe`
+        Right
+          (TypeTree $
+           LinkedTree
+             (Node
+                (Link "Root")
+                [ Node (Link "Inc") [Node (Link "a") [], Node (Link "a") []]
+                , Node
+                    (Link "F1")
+                    [ Node
+                        (Link "Head")
+                        [ Node (Link "seq") [Node (Link "a") []]
+                        , Node (Link "a") []
+                        ]
+                    , Node
+                        (Link "Ret")
+                        [ Node (Link "seq") [Node (Link "a") []]
+                        , Node (Link "a") []
+                        ]
+                    ]
+                ])
+             (Map.fromList
+                [ (Link "Root", [RigidType Fun])
+                , (Link "Inc", [RigidType Fun])
+                , (Link "Head", [RigidType Fun])
+                , (Link "Ret", [RigidType Fun])
+                , (Link "F1", [RigidType Fun])
+                , (Link "seq", [RigidType Seq])
+                , (Link "a", [RigidType Int])
+                ]))
+      describe "apply" $
+        it "(head . inc) $ seq" $
+        (pure compose >>= apply' inc >>= apply' head >>= apply' seq) `shouldBe`
+        Right
+          (TypeTree $
+           LinkedTree
+             (Node (Link "Root") [])
+             (Map.fromList [(Link "Root", [RigidType Int])]))
