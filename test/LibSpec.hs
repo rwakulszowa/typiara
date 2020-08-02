@@ -5,8 +5,6 @@ module LibSpec
   ( spec
   ) where
 
-import Lib
-
 import Test.Hspec
 
 import qualified Data.Map.Strict as Map

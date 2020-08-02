@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cc390ba83aaaa5e7cfdaf36be3b13c0e45d1dbba73f98ed34c307ff30bac086c
+-- hash: e118833bfce1f7e60a96f6a28f68099a96a40e2bccd3cd409059236deb86edd6
 
 name:           typiara
 version:        0.1.0.0
@@ -30,7 +30,6 @@ library
       Constraint
       Dag
       LeftOrRight
-      Lib
       Link
       LinkedTree
       MaybeEq
