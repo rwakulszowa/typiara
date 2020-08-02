@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Utils where
+module Typiara.Utils where
 
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map.Strict as Map
@@ -22,8 +22,8 @@ import Data.Semigroup ((<>))
 import Data.Traversable (mapAccumL)
 import Data.Tuple (swap)
 
-import LeftOrRight
-import OneOrTwo
+import Typiara.LeftOrRight
+import Typiara.OneOrTwo
 
 maybeAt :: [a] -> Int -> Maybe a
 maybeAt list index = snd <$> (find ((== index) . fst) . zip [0 ..] $ list)

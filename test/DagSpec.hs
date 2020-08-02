@@ -5,7 +5,7 @@ module DagSpec
   ( spec
   ) where
 
-import Dag
+import Typiara.Dag
 
 import Test.Hspec
 
@@ -16,10 +16,10 @@ import qualified Data.Set as Set
 
 import Data.Tree (Tree(..))
 
-import qualified UniqueItemSource
+import qualified Typiara.UniqueItemSource as UniqueItemSource
 
-import UniqueItemSource (UniqueItemSource)
-import Utils (fromRight)
+import Typiara.UniqueItemSource (UniqueItemSource)
+import Typiara.Utils (fromRight)
 
 fromTree' :: (Ord id, Show id) => Tree id -> Dag id
 fromTree' = fromRight . fromTree

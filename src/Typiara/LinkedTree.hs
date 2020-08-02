@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module LinkedTree
+module Typiara.LinkedTree
   ( LinkedTree(..)
   , intoTree
   , fromTree
@@ -27,13 +27,13 @@ import Data.Function (on)
 import Data.Maybe (fromJust)
 import Data.Traversable (mapAccumL)
 
-import qualified Dag
-import qualified UniqueItemSource
+import qualified Typiara.Dag as Dag
+import qualified Typiara.UniqueItemSource as UniqueItemSource
 
-import LeftOrRight (LeftOrRight)
-import Link (Link(..))
-import Path (Path(..))
-import Utils
+import Typiara.LeftOrRight (LeftOrRight)
+import Typiara.Link (Link(..))
+import Typiara.Path (Path(..))
+import Typiara.Utils
   ( allStrings
   , atPath
   , fromRight

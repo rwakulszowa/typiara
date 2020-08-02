@@ -4,27 +4,27 @@ module TypeDefSpec
   ( spec
   ) where
 
-import TypeDef
+import Typiara.TypeDef
 
 import Test.Hspec
 
 import Data.Tree (Tree(..))
 
-import Link (Link(..))
-import LinkedTree (LinkedTree(..))
 import TestConstraint (TestConstraint(..))
-import TypeTree (TypeTree(..))
+import Typiara.Link (Link(..))
+import Typiara.LinkedTree (LinkedTree(..))
+import Typiara.TypeTree (TypeTree(..))
 
 spec :: Spec
 spec =
   describe "intoTypeTree" $ do
     it "singleton" $
-      TypeDef.intoTypeTree (TypeDef (Node "a" []) [("a", ConstraintId "C0")]) `shouldBe`
+      intoTypeTree (TypeDef (Node "a" []) [("a", ConstraintId "C0")]) `shouldBe`
       Right
         (TypeTree $
          LinkedTree (Node (Link "a") []) [(Link "a", ConstraintId "C0")])
     it "straight path" $
-      TypeDef.intoTypeTree
+      intoTypeTree
         (TypeDef
            (Node "root" [Node "0" [Node "0-0" []]])
            [ ("root", ConstraintId "C0")
@@ -40,7 +40,7 @@ spec =
             , (Link "0-0", ConstraintId "C2")
             ]))
     it "wide, flat" $
-      TypeDef.intoTypeTree
+      intoTypeTree
         (TypeDef
            (Node "root" [Node "0" [], Node "1" []])
            [ ("root", ConstraintId "C0")

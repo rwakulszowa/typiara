@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Dag where
+module Typiara.Dag where
 
 import Prelude hiding (null)
 
@@ -16,12 +16,12 @@ import Data.Tree (Tree(..))
 import Data.Maybe (fromJust)
 import Data.Traversable (mapAccumL)
 
-import qualified UniqueItemSource
+import qualified Typiara.UniqueItemSource as UniqueItemSource
 
-import LeftOrRight (LeftOrRight)
-import Path (Path(..))
-import UniqueItemSource (UniqueItemSource)
-import Utils
+import Typiara.LeftOrRight (LeftOrRight)
+import Typiara.Path (Path(..))
+import Typiara.UniqueItemSource (UniqueItemSource)
+import Typiara.Utils
   ( denumerateSequence
   , insertIfNew
   , mapFromListWithKeyM

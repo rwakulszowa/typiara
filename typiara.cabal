@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e118833bfce1f7e60a96f6a28f68099a96a40e2bccd3cd409059236deb86edd6
+-- hash: f12c1e08d7c5754132beb35cd892879a75f5a4a554b8b7842661efc6829976b5
 
 name:           typiara
 version:        0.1.0.0
@@ -27,19 +27,19 @@ source-repository head
 
 library
   exposed-modules:
-      Constraint
-      Dag
-      LeftOrRight
-      Link
-      LinkedTree
-      MaybeEq
-      OneOrTwo
-      Path
-      Type
-      TypeDef
-      TypeTree
-      UniqueItemSource
-      Utils
+      Typiara.Constraint
+      Typiara.Dag
+      Typiara.LeftOrRight
+      Typiara.Link
+      Typiara.LinkedTree
+      Typiara.MaybeEq
+      Typiara.OneOrTwo
+      Typiara.Path
+      Typiara.Type
+      Typiara.TypeDef
+      Typiara.TypeTree
+      Typiara.UniqueItemSource
+      Typiara.Utils
   other-modules:
       Paths_typiara
   hs-source-dirs:

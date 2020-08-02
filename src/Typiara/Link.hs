@@ -1,4 +1,4 @@
-module Link where
+module Typiara.Link where
 
 newtype Link =
   Link String

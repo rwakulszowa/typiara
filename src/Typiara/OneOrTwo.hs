@@ -1,4 +1,4 @@
-module OneOrTwo where
+module Typiara.OneOrTwo where
 
 -- Either a (a, a), except it's not `Either`.
 -- `data` rather than `type` to avoid implicit conversions.

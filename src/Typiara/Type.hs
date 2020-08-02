@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Type
+module Typiara.Type
   ( Type(..)
   , RigidType(..)
   , Requirement(..)
@@ -13,7 +13,7 @@ import Data.Tree (Tree(..))
 
 import Data.Semigroup (sconcat)
 
-import Constraint
+import Typiara.Constraint
 
 -- Simplified, statically defined, Haskell-like type system.
 -- No inheritance. A type can be bound by up to 1 `RigidType` and multiple `Requirement`s.

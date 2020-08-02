@@ -5,7 +5,7 @@ module LinkedTreeSpec
   ( spec
   ) where
 
-import LinkedTree
+import Typiara.LinkedTree
 
 import Test.Hspec
 
@@ -17,9 +17,9 @@ import Data.Either (isLeft)
 import Data.Foldable (foldl, sum)
 import Data.Tree
 
-import qualified Dag
+import qualified Typiara.Dag as Dag
 
-import Link
+import Typiara.Link
 
 spec :: Spec
 spec = do

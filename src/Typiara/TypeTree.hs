@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module TypeTree
+module Typiara.TypeTree
   ( TypeTree(..)
   , Constraint
   , merge
@@ -14,14 +14,14 @@ module TypeTree
 
 import Data.Tree (Tree(..))
 
-import qualified Constraint
-import qualified LinkedTree
+import qualified Typiara.Constraint as Constraint
+import qualified Typiara.LinkedTree as LinkedTree
 
-import LinkedTree (LinkedTree(..))
-import Path (Path(..))
-import Utils (mapLeft, maybeError)
+import Typiara.LinkedTree (LinkedTree(..))
+import Typiara.Path (Path(..))
+import Typiara.Utils (mapLeft, maybeError)
 
-import Constraint (Constraint, ConstraintErr(..))
+import Typiara.Constraint (Constraint, ConstraintErr(..))
 
 -- A full definition of a type.
 newtype TypeTree c =

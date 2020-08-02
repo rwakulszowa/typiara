@@ -7,7 +7,7 @@ module UniqueItemSourceSpec
 
 import Test.Hspec
 
-import UniqueItemSource
+import Typiara.UniqueItemSource
 
 spec :: Spec
 spec =

@@ -1,4 +1,4 @@
-module MaybeEq where
+module Typiara.MaybeEq where
 
 -- Wrapper around `Maybe` that considers two `Nothing` values different.
 -- Falls back to regular `==` implementation in all other cases.

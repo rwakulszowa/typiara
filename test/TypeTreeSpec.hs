@@ -5,18 +5,18 @@ module TypeTreeSpec
   ( spec
   ) where
 
-import TypeTree
+import Typiara.TypeTree
 
 import Test.Hspec
 
 import Data.Tree (Tree(..))
 
-import qualified LinkedTree
-import qualified TypeTree
+import qualified Typiara.LinkedTree as LinkedTree
+import qualified Typiara.TypeTree as TypeTree
 
-import Link (Link(..))
-import LinkedTree (LinkedTree(..))
 import TestConstraint (TestConstraint(..))
+import Typiara.Link (Link(..))
+import Typiara.LinkedTree (LinkedTree(..))
 
 unwrap (Right x) = x
 unwrap (Left err) = error . show $ err

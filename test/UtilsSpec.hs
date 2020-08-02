@@ -4,7 +4,7 @@ module UtilsSpec
   ( spec
   ) where
 
-import Utils
+import Typiara.Utils
 
 import Test.Hspec
 
@@ -13,7 +13,7 @@ import qualified Data.Tree as Tree
 
 import Data.Tree (Tree(..))
 
-import OneOrTwo (OneOrTwo(..))
+import Typiara.OneOrTwo (OneOrTwo(..))
 
 spec :: Spec
 spec = do

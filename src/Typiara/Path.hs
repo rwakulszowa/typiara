@@ -1,4 +1,4 @@
-module Path where
+module Typiara.Path where
 
 type Step = Int
 

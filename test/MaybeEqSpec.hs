@@ -2,7 +2,7 @@ module MaybeEqSpec
   ( spec
   ) where
 
-import MaybeEq
+import Typiara.MaybeEq
 
 import Test.Hspec
 

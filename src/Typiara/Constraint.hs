@@ -1,4 +1,4 @@
-module Constraint where
+module Typiara.Constraint where
 
 import Data.List.NonEmpty (NonEmpty)
 

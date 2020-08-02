@@ -2,7 +2,7 @@ module TestConstraint where
 
 import Data.List.NonEmpty (NonEmpty(..))
 
-import Constraint
+import Typiara.Constraint
 
 data TestConstraint
   = Fail

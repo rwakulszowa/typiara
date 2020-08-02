@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedLists #-}
 
-module TypeDef
+module Typiara.TypeDef
   ( LinkId
   , TypeDef(..)
   , intoTypeTree
@@ -17,15 +17,15 @@ import Data.Tree (Tree)
 
 import Data.List ((\\), nub)
 
-import qualified LinkedTree
-import qualified TypeTree
+import qualified Typiara.LinkedTree as LinkedTree
+import qualified Typiara.TypeTree as TypeTree
 
-import Constraint (Constraint)
-import Link (Link(..))
-import LinkedTree (LinkedTree(..))
-import Path (Step)
-import TypeTree (TypeTree(..))
-import Utils (enumerateTree, mapLeft)
+import Typiara.Constraint (Constraint)
+import Typiara.Link (Link(..))
+import Typiara.LinkedTree (LinkedTree(..))
+import Typiara.Path (Step)
+import Typiara.TypeTree (TypeTree(..))
+import Typiara.Utils (enumerateTree, mapLeft)
 
 -- Definition of a type.
 -- 

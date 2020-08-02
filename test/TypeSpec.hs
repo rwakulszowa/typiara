@@ -8,10 +8,11 @@ import Test.Hspec
 
 import qualified Data.Set as Set
 
-import Constraint
 import Data.Either (isLeft)
-import Link
-import Type
+
+import Typiara.Constraint
+import Typiara.Link
+import Typiara.Type
 
 spec :: Spec
 spec =

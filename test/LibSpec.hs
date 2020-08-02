@@ -12,16 +12,16 @@ import qualified Data.Map.Strict as Map
 import Data.Set (Set)
 import Data.Tree (Tree(..))
 
-import qualified LinkedTree
-import qualified TypeDef
-import qualified TypeTree
+import qualified Typiara.LinkedTree as LinkedTree
+import qualified Typiara.TypeDef as TypeDef
+import qualified Typiara.TypeTree as TypeTree
 
-import Link (Link(..))
-import LinkedTree (LinkedTree(..))
-import Type
-import TypeDef (TypeDef(..))
-import TypeTree (TypeTree(..))
-import Utils (fromRight)
+import Typiara.Link (Link(..))
+import Typiara.LinkedTree (LinkedTree(..))
+import Typiara.Type
+import Typiara.TypeDef (TypeDef(..))
+import Typiara.TypeTree (TypeTree(..))
+import Typiara.Utils (fromRight)
 
 spec :: Spec
 spec =
