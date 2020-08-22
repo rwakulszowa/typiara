@@ -23,6 +23,10 @@ unwrap (Left err) = error . show $ err
 
 spec :: Spec
 spec = do
+  describe "constructors" $
+    it "singleton" $
+    singleton (ConstraintId "A") `shouldBe`
+    (TypeTree $ LinkedTree (Node (Link "a") []) [(Link "a", ConstraintId "A")])
   describe "merge" $ do
     describe "nil offset" $ do
       it "singleton singleton" $ do

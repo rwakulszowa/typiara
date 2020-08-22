@@ -2,6 +2,7 @@
 
 module Typiara.TypeTree
   ( TypeTree(..)
+  , singleton
   , Constraint
   , merge
   , MergeErr(..)
@@ -29,6 +30,8 @@ newtype TypeTree c =
     { impl :: LinkedTree c
     }
   deriving (Show, Eq)
+
+singleton = TypeTree . LinkedTree.singleton
 
 data MergeErr c
   = ShapeErr (LinkedTree.MergeErr c)

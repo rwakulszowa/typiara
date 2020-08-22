@@ -2,6 +2,7 @@
 
 module Typiara.LinkedTree
   ( LinkedTree(..)
+  , singleton
   , intoTree
   , fromTree
   , expand
@@ -76,6 +77,11 @@ instance Traversable LinkedTree where
 
 null :: LinkedTree a
 null = LinkedTree (Node (Link "null") []) Map.empty
+
+singleton :: a -> LinkedTree a
+singleton a = LinkedTree (Node root []) (Map.singleton root a)
+  where
+    root = Link "root"
 
 intoTree :: LinkedTree a -> Tree (Link, a)
 intoTree (LinkedTree shape values) =
