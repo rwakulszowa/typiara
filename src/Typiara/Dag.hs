@@ -4,6 +4,7 @@ module Typiara.Dag where
 
 import Prelude hiding (null)
 
+import qualified Control.Monad as Monad
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Tree as Tree
@@ -23,6 +24,7 @@ import Typiara.Path (Path(..))
 import Typiara.UniqueItemSource (UniqueItemSource)
 import Typiara.Utils
   ( denumerateSequence
+  , fromRight
   , insertIfNew
   , mapFromListWithKeyM
   , mapLeft
@@ -192,7 +194,7 @@ merge idSource left offset right = do
       mapLeft IdSourceErr $ UniqueItemSource.takeUnique count source
 
 merge' ::
-     (Ord id)
+     (Ord id, Show id)
   => Dag id
   -> Path
   -> Dag id
@@ -205,6 +207,7 @@ merge' left offset right = do
   if null mappedRight
     then return (mappedLeft, Map.singleton rightRoot leftNodeAtOffset)
     -- Create an overlap by replacing the right root with an injected id in all edges.
+    -- The overlap is then propagated across the whole graph.
     else let (resolved, diffMap) =
                let (initialDiff, withInjectedOverlap) =
                      injectInitialOverlap leftNodeAtOffset mappedRight
@@ -231,6 +234,35 @@ merge' left offset right = do
 -- Map of updates performed during the operation.
 -- Returned to the caller to let it further process changes.
 type DiffMap id = Map (EdgeDst id) (EdgeDst id)
+
+-- Individual update events. The same item may appear as a src in one element and as a dst in another.
+-- The list has to be "flattened" before being converted to a `DiffMap`.
+-- The most recent update is expected to be the first element.
+type Updates a = [(a, a)]
+
+data DiffMapFromUpdatesErr id
+  = DuplicateUpdate (EdgeDst id)
+  | OutOfOrderUpdate (EdgeDst id)
+  deriving (Eq, Show)
+
+-- TODO: move DiffMap to a module, implement a generic set of functions
+-- to operate on applicatives with a diff
+-- Process a sequence of ordered updates, building a DiffMap.
+-- Processes items from left to right.
+diffMapFromUpdates ::
+     (Ord id)
+  => Updates (EdgeDst id)
+  -> Either (DiffMapFromUpdatesErr id) (DiffMap id)
+diffMapFromUpdates = Monad.foldM processOne Map.empty
+  where
+    processOne diffMap (src, dst)
+         -- Cannot map the same value twice.
+      | src `Map.member` diffMap = Left $ DuplicateUpdate src
+         -- sources are expected to be processed before any item references them as a dst.
+      | src `elem` Map.elems diffMap = Left $ OutOfOrderUpdate src
+      | otherwise =
+        Right $ insertIfNew' src (Map.findWithDefault dst dst diffMap) diffMap
+    insertIfNew' k v m = fromJust $ insertIfNew k v m
 
 -- Temporary type that defines a set potentially overlapping edges.
 -- When all values are 1-element long lists, the type is considered non-overlapping
@@ -288,32 +320,29 @@ replaceId oldId newId overlappingEdges =
         else EdgeSrc keyId index
 
 resolveOverlappingEdges ::
-     (Ord id)
+     (Ord id, Show id)
   => (id, id)
   -> OverlappingEdges id
   -> (NonOverlappingEdges id, DiffMap id)
 resolveOverlappingEdges (initialReplacedNode, initialInjectedNode) overlappingEdges =
   fromJust $ do
-    (resolvedEdges, diffMap) <-
+    (resolvedEdges, updates) <-
       pure $
-      resolve'
-        overlappingEdges
-        (Map.singleton initialReplacedNode initialInjectedNode)
+      resolve' overlappingEdges [(initialReplacedNode, initialInjectedNode)]
     nonOverlappingEdges <- intoNonOverlapping resolvedEdges
+    let diffMap = fromRight . diffMapFromUpdates $ updates
     return (nonOverlappingEdges, diffMap)
   where
     resolve' ::
-         (Ord id)
+         (Ord id, Show id)
       => OverlappingEdges id
-      -> DiffMap id
-      -> (OverlappingEdges id, DiffMap id)
-    resolve' overlappingEdges diffMap =
+      -> Updates (EdgeDst id)
+      -> (OverlappingEdges id, Updates (EdgeDst id))
+    resolve' overlappingEdges updates =
       case popOne overlappingEdges of
         (Just (x, y), remainingEdges) ->
           let (updatedEdges, (erasedId, erasedIdsReplacement)) =
                 replaceId x y remainingEdges
-           in resolve'
-                updatedEdges
-                (fromJust $ insertIfNew erasedId erasedIdsReplacement diffMap)
+           in resolve' updatedEdges ((erasedId, erasedIdsReplacement) : updates)
         (Nothing, overlappingEdgesWithNoDuplicates) ->
-          (overlappingEdgesWithNoDuplicates, diffMap)
+          (overlappingEdgesWithNoDuplicates, updates)

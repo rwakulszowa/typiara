@@ -68,6 +68,20 @@ spec = do
         Right
           ( fromTree' (Node 'a' [Node 'b' []])
           , [(Left 'A', 'a'), (Left 'B', 'b'), (Right 'A', 'b')])
+    it "linked simple []" $
+      -- Links from `x` propagate to `y`.
+     do
+      let x = fromTree' (Node 'A' [Node 'B' [], Node 'B' []])
+      let y = fromTree' (Node 'C' [Node 'D' [], Node 'E' []])
+      merge idSource x [] y `shouldBe`
+        Right
+          ( fromTree' (Node 'a' [Node 'b' [], Node 'b' []])
+          , [ (Left 'A', 'a')
+            , (Left 'B', 'b')
+            , (Right 'C', 'a')
+            , (Right 'D', 'b')
+            , (Right 'E', 'b')
+            ])
     it "simple simple [1] with links" $ do
       let x = fromTree' (Node 'A' [Node 'B' [], Node 'B' []])
       let y = fromTree' (Node 'C' [Node 'D' [], Node 'D' []])
