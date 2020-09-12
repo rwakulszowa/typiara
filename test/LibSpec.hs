@@ -76,8 +76,8 @@ spec =
       it "head . inc" $
         (pure compose >>= merge' inc [0] >>= merge' head [1, 0]) `shouldBe`
         Right
-          (TypeTree $
-           LinkedTree
+          (TypeTree . fromRight $
+           LinkedTree.linkedTree
              (Node
                 (Link "Root")
                 [ Node (Link "Inc") [Node (Link "a") [], Node (Link "a") []]
@@ -108,7 +108,7 @@ spec =
         it "(head . inc) $ seq" $
         (pure compose >>= apply' inc >>= apply' head >>= apply' seq) `shouldBe`
         Right
-          (TypeTree $
-           LinkedTree
+          (TypeTree . fromRight $
+           LinkedTree.linkedTree
              (Node (Link "Root") [])
              (Map.fromList [(Link "Root", [RigidType Int])]))

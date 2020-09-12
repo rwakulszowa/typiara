@@ -1,7 +1,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Typiara.LinkedTree
-  ( LinkedTree(..)
+  ( LinkedTree
+  , linkedTree
+  , shape
+  , values
   , ROLinkedTree(..)
   , ro
   , singleton
@@ -79,7 +82,6 @@ instance Eq a => Eq (ROLinkedTree a) where
       rawShape :: Tree x -> Tree ()
       rawShape t = () <$ t
 
--- TODO: check in a constructor whether both items are in sync (keys in a map == values in  a tree)
 instance Functor LinkedTree where
   fmap f (LinkedTree shape values) = LinkedTree shape (fmap f values)
 
@@ -96,6 +98,22 @@ singleton :: a -> LinkedTree a
 singleton a = LinkedTree (Node root []) (Map.singleton root a)
   where
     root = Link "root"
+
+data LinkedTreeConstructorError =
+  LinksOutOfSync
+    { shapeLinks :: Set Link
+    , valuesLinks :: Set Link
+    }
+  deriving (Eq, Show)
+
+linkedTree ::
+     Tree Link -> Map Link a -> Either LinkedTreeConstructorError (LinkedTree a)
+linkedTree shape values =
+  let shapeLinks = Set.fromList $ Tree.flatten shape
+      valuesLinks = Set.fromList $ Map.keys values
+   in if shapeLinks == valuesLinks
+        then Right $ LinkedTree shape values
+        else Left $ LinksOutOfSync shapeLinks valuesLinks
 
 intoTree :: LinkedTree a -> Tree (Link, a)
 intoTree (LinkedTree shape values) =

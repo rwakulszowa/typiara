@@ -12,25 +12,30 @@ import Test.Hspec
 import qualified Data.Map.Strict as Map
 
 import Data.List.NonEmpty (NonEmpty(..))
+import Data.Map (Map(..))
 
 import Data.Either (isLeft)
 import Data.Foldable (foldl, sum)
 import Data.Tree
 
 import qualified Typiara.Dag as Dag
+import qualified Typiara.Utils as Utils
 
 import Typiara.Link
+
+linkedTree' :: Tree Link -> Map Link a -> LinkedTree a
+linkedTree' s v = Utils.fromRight $ linkedTree s v
 
 spec :: Spec
 spec = do
   describe "fmap" $ do
     it "singleton" $
-      ro ((+ 1) <$> LinkedTree (Node (Link "A") []) [(Link "A", 1)]) `shouldBe`
+      ro ((+ 1) <$> linkedTree' (Node (Link "A") []) [(Link "A", 1)]) `shouldBe`
       ROLinkedTree (Node (Link "A") []) [(Link "A", 2)]
     it "nested" $
       ro
         ((+ 10) <$>
-         LinkedTree
+         linkedTree'
            (Node (Link "A") [Node (Link "B") [], Node (Link "C") []])
            [(Link "A", 1), (Link "B", 2), (Link "C", 3)]) `shouldBe`
       ROLinkedTree
@@ -39,7 +44,7 @@ spec = do
     it "with LinkedNode" $
       ro
         ((+ 10) <$>
-         LinkedTree
+         linkedTree'
            (Node (Link "A") [Node (Link "B") [], Node (Link "B") []])
            [(Link "A", 1), (Link "B", 2)]) `shouldBe`
       ROLinkedTree
@@ -47,12 +52,12 @@ spec = do
         [(Link "A", 11), (Link "B", 12)]
   describe "scan" $ do
     it "singleton" $
-      ro (sum `scan` LinkedTree (Node (Link "A") []) [(Link "A", 1)]) `shouldBe`
+      ro (sum `scan` linkedTree' (Node (Link "A") []) [(Link "A", 1)]) `shouldBe`
       ROLinkedTree (Node (Link "A") []) [(Link "A", 1)]
     it "nested" $
       ro
         (sum `scan`
-         LinkedTree
+         linkedTree'
            (Node (Link "A") [Node (Link "B") [], Node (Link "C") []])
            [(Link "A", 1), (Link "B", 2), (Link "C", 3)]) `shouldBe`
       ROLinkedTree
@@ -61,7 +66,7 @@ spec = do
     it "with LinkedNode" $
       ro
         (sum `scan`
-         LinkedTree
+         linkedTree'
            (Node (Link "A") [Node (Link "B") [], Node (Link "B") []])
            [(Link "A", 1), (Link "B", 2)]) `shouldBe`
       ROLinkedTree
@@ -69,54 +74,54 @@ spec = do
         [(Link "A", 5), (Link "B", 2)]
   describe "foldl" $ do
     it "singleton" $
-      concat (LinkedTree (Node (Link "A") []) [(Link "A", "a")]) `shouldBe` "a"
+      concat (linkedTree' (Node (Link "A") []) [(Link "A", "a")]) `shouldBe` "a"
     it "nested" $
       concat
-        (LinkedTree
+        (linkedTree'
            (Node (Link "A") [Node (Link "B") [], Node (Link "C") []])
            [(Link "A", "a"), (Link "B", "b"), (Link "C", "c")]) `shouldBe`
       "abc"
     it "with LinkedNode" $
       concat
-        (LinkedTree
+        (linkedTree'
            (Node (Link "A") [Node (Link "B") [], Node (Link "B") []])
            [(Link "A", "a"), (Link "B", "b")]) `shouldBe`
       "ab"
   describe "sequence" $ do
     it "singleton - Just" $
-      (ro <$> sequence (LinkedTree (Node (Link "A") []) [(Link "A", Just "a")])) `shouldBe`
+      (ro <$> sequence (linkedTree' (Node (Link "A") []) [(Link "A", Just "a")])) `shouldBe`
       Just (ROLinkedTree (Node (Link "A") []) [(Link "A", "a")])
     it "singleton - Nothing" $
       (ro <$>
        sequence
-         (LinkedTree (Node (Link "A") []) [(Link "A", Nothing :: Maybe Char)])) `shouldBe`
+         (linkedTree' (Node (Link "A") []) [(Link "A", Nothing :: Maybe Char)])) `shouldBe`
       Nothing
     it "nested, mixed" $
       (ro <$>
        sequence
-         (LinkedTree
+         (linkedTree'
             (Node (Link "A") [Node (Link "B") []])
             [(Link "A", Just "a"), (Link "B", Nothing)])) `shouldBe`
       Nothing
   describe "intoTree" $ do
     it "singleton" $
-      intoTree (LinkedTree (Node (Link "A") []) [(Link "A", 1)]) `shouldBe`
+      intoTree (linkedTree' (Node (Link "A") []) [(Link "A", 1)]) `shouldBe`
       Node (Link "A", 1) []
     it "nested, no links" $
       intoTree
-        (LinkedTree
+        (linkedTree'
            (Node (Link "A") [Node (Link "B") [], Node (Link "C") []])
            [(Link "A", 1), (Link "B", 2), (Link "C", 3)]) `shouldBe`
       Node (Link "A", 1) [Node (Link "B", 2) [], Node (Link "C", 3) []]
     it "nested, links" $
       intoTree
-        (LinkedTree
+        (linkedTree'
            (Node (Link "A") [Node (Link "B") [], Node (Link "B") []])
            [(Link "A", 1), (Link "B", 2)]) `shouldBe`
       Node (Link "A", 1) [Node (Link "B", 2) [], Node (Link "B", 2) []]
     it "complex, multiple links on different levels" $
       intoTree
-        (LinkedTree
+        (linkedTree'
            (Node
               (Link "A")
               [ Node (Link "B") [Node (Link "C") [], Node (Link "C") []]
@@ -163,18 +168,18 @@ spec = do
       (Left $ ConflictingValues (Link "B") (2, 3))
   describe "merge" $ do
     it "singleton [] singleton" $ do
-      let host = LinkedTree (Node (Link "a") []) [(Link "a", 1)]
-      let guest = LinkedTree (Node (Link "a") []) [(Link "a", 2)]
+      let host = linkedTree' (Node (Link "a") []) [(Link "a", 1)]
+      let guest = linkedTree' (Node (Link "a") []) [(Link "a", 2)]
       let offset = []
       (ro <$> merge host offset guest) `shouldBe`
         (Right $ ROLinkedTree (Node (Link "a") []) [(Link "a", 2 :| [1])])
     it "tree offset tree" $ do
       let host =
-            LinkedTree
+            linkedTree'
               (Node (Link "a") [Node (Link "b") [], Node (Link "c") []])
               [(Link "a", 1), (Link "b", 2), (Link "c", 3)]
       let guest =
-            LinkedTree
+            linkedTree'
               (Node (Link "d") [Node (Link "e") [], Node (Link "f") []])
               [(Link "d", 4), (Link "e", 5), (Link "f", 6)]
       let offset = [1]
@@ -194,11 +199,11 @@ spec = do
            ])
     it "at linked node" $ do
       let host =
-            LinkedTree
+            linkedTree'
               (Node (Link "a") [Node (Link "b") [], Node (Link "b") []])
               [(Link "a", 1), (Link "b", 2)]
       let guest =
-            LinkedTree
+            linkedTree'
               (Node (Link "c") [Node (Link "d") [], Node (Link "d") []])
               [(Link "c", 3), (Link "d", 4)]
       let offset = [1]
@@ -213,11 +218,11 @@ spec = do
            [(Link "a", 1 :| []), (Link "b", 3 :| [2]), (Link "c", 4 :| [])])
     it "at linked nodes' parent copies children across linked branches" $ do
       let host =
-            LinkedTree
+            linkedTree'
               (Node (Link "a") [Node (Link "b") [], Node (Link "b") []])
               [(Link "a", 1), (Link "b", 2)]
       let guest =
-            LinkedTree
+            linkedTree'
               (Node (Link "c") [Node (Link "d") [Node (Link "e") []]])
               [(Link "c", 3), (Link "d", 4), (Link "e", 5)]
       let offset = []
@@ -231,8 +236,8 @@ spec = do
               ])
            [(Link "a", 3 :| [1]), (Link "b", 4 :| [2]), (Link "c", 5 :| [])])
     it "invalid offset" $ do
-      let host = LinkedTree (Node (Link "a") []) [(Link "a", 1)]
-      let guest = LinkedTree (Node (Link "a") []) [(Link "a", 2)]
+      let host = linkedTree' (Node (Link "a") []) [(Link "a", 1)]
+      let guest = linkedTree' (Node (Link "a") []) [(Link "a", 2)]
       let offset = [0, 0]
       (ro <$> merge host offset guest) `shouldBe`
         (Left $ DagMergeErr Dag.PathNotFound)

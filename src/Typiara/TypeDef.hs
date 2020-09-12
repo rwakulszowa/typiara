@@ -47,7 +47,7 @@ intoLinkedTree ::
 intoLinkedTree (TypeDef shape constraints) =
   let shapeOfLinks = Link <$> shape
       constraintsOfLinks = Map.mapKeys Link constraints
-   in Right $ LinkedTree shapeOfLinks constraintsOfLinks
+   in mapLeft show $ LinkedTree.linkedTree shapeOfLinks constraintsOfLinks
 
 intoTypeTree ::
      (Constraint c, Show c, Ord c, Eq c)
