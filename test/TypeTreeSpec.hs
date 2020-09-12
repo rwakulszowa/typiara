@@ -138,23 +138,6 @@ spec = do
         (Right $
          TypeTree $
          linkedTree' (Node (Link "b") []) [(Link "b", ConstraintId "B")])
-  describe "apply" $
-    it "(a -> b) a" $ do
-      let fun =
-            TypeTree $
-            linkedTree'
-              (Node (Link "fun") [Node (Link "a") [], Node (Link "b") []])
-              [ (Link "fun", ConstraintId "F")
-              , (Link "a", ConstraintId "A")
-              , (Link "b", ConstraintId "B")
-              ]
-      let arg =
-            TypeTree $
-            linkedTree' (Node (Link "a") []) [(Link "a", ConstraintId "A")]
-      fun `apply` arg `shouldBe`
-        (Right $
-         TypeTree $
-         linkedTree' (Node (Link "b") []) [(Link "b", ConstraintId "B")])
   describe "asTree" $
     it "singleton" $ do
       let tree = linkedTree' (Node (Link "a") []) [(Link "a", ConstraintId "A")]

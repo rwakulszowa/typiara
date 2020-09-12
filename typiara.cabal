@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f12c1e08d7c5754132beb35cd892879a75f5a4a554b8b7842661efc6829976b5
+-- hash: 3def74e3169fd8bb492e5258923d0fde8d80055fe9294d8c58e57d7cc697221a
 
 name:           typiara
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      Typiara.Apply
       Typiara.Constraint
       Typiara.Dag
       Typiara.LeftOrRight
@@ -68,6 +69,7 @@ test-suite typiara-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      ApplySpec
       DagSpec
       LibSpec
       LinkedTreeSpec

@@ -8,8 +8,6 @@ module Typiara.TypeTree
   , MergeErr(..)
   , shift
   , ShiftErr(..)
-  , apply
-  , ApplyErr(..)
   , asTree
   ) where
 
@@ -63,17 +61,6 @@ data ShiftErr =
 shift :: (Constraint c) => TypeTree c -> Path -> Either ShiftErr (TypeTree c)
 shift (TypeTree impl) path =
   TypeTree <$> maybeError PathNotFound (path `LinkedTree.shift` impl)
-
-data ApplyErr c
-  = ShiftErr ShiftErr
-  | MergeErr (MergeErr c)
-  deriving (Eq, Show)
-
--- TODO: check if fun is applicable (add a Constraint method)
-apply fun arg = merge' fun [0] arg >>= shift' [1]
-  where
-    merge' x path y = mapLeft MergeErr $ merge x path y
-    shift' path tree = mapLeft ShiftErr $ shift tree path
 
 asTree :: TypeTree c -> LinkedTree c
 asTree (TypeTree impl) = impl

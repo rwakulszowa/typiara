@@ -12,6 +12,7 @@ import qualified Data.Map.Strict as Map
 import Data.Set (Set)
 import Data.Tree (Tree(..))
 
+import qualified Typiara.Apply as Apply
 import qualified Typiara.LinkedTree as LinkedTree
 import qualified Typiara.TypeDef as TypeDef
 import qualified Typiara.TypeTree as TypeTree
@@ -69,9 +70,9 @@ spec =
           mapM
             TypeDef.intoTypeTree
             ([seqDef, incDef, composeDef, headDef] :: [TypeDef (Set Type)])
-      -- merge with arguments flipped to aid composition.
+      -- functions with arguments flipped to aid composition.
     let merge' guest path host = TypeTree.merge host path guest
-    let apply' = flip TypeTree.apply
+    let apply' x y = Apply.ret <$> Apply.apply y x
     describe "merge" $ do
       it "head . inc" $
         (pure compose >>= merge' inc [0] >>= merge' head [1, 0]) `shouldBe`
