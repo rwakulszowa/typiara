@@ -154,4 +154,5 @@ spec = do
   describe "asTree" $
     it "singleton" $ do
       let tree = LinkedTree (Node (Link "a") []) [(Link "a", ConstraintId "A")]
-      TypeTree.asTree (TypeTree tree) `shouldBe` tree
+      LinkedTree.ro (TypeTree.asTree (TypeTree tree)) `shouldBe`
+        LinkedTree.ro tree

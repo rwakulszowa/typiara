@@ -13,6 +13,8 @@ module Typiara.TypeTree
   , asTree
   ) where
 
+import Data.Function (on)
+
 import Data.Tree (Tree(..))
 
 import qualified Typiara.Constraint as Constraint
@@ -29,7 +31,10 @@ newtype TypeTree c =
   TypeTree
     { impl :: LinkedTree c
     }
-  deriving (Show, Eq)
+  deriving (Show)
+
+instance Eq c => Eq (TypeTree c) where
+  (==) (TypeTree implX) (TypeTree implY) = ((==) `on` LinkedTree.ro) implX implY
 
 singleton = TypeTree . LinkedTree.singleton
 
