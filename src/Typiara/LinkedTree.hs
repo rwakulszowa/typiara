@@ -29,7 +29,7 @@ import Data.Maybe (fromJust)
 import Data.Traversable (mapAccumL)
 
 import qualified Typiara.Dag as Dag
-import qualified Typiara.UniqueItemSource as UniqueItemSource
+import qualified Typiara.Link as Link
 
 import Typiara.LeftOrRight (LeftOrRight)
 import Typiara.Link (Link(..))
@@ -169,11 +169,7 @@ merge (LinkedTree hostShape hostValues) mergeLocation (LinkedTree guestShape gue
     mergeDagAndUpdateIds host location guest = do
       (shape, diff) <-
         mapLeft DagMergeErr $
-        Dag.merge
-          (UniqueItemSource.fromList $ Link <$> allStrings)
-          host
-          location
-          guest
+        Dag.merge Link.uniqueLinkSource host location guest
       updatedShape <- mapLeft DagIntoTreeErr (Dag.intoTree shape)
       return (updatedShape, diff)
 
