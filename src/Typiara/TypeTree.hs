@@ -5,6 +5,7 @@ module Typiara.TypeTree
   , singleton
   , Constraint
   , merge
+  , mergeAt
   , MergeErr(..)
   , shift
   , ShiftErr(..)
@@ -41,18 +42,20 @@ data MergeErr c
   | ConflictingConstraints (ConstraintErr c)
   deriving (Eq, Show)
 
-merge ::
+mergeAt ::
      (Ord c, Constraint c, Show c)
   => TypeTree c
   -> Path
   -> TypeTree c
   -> Either (MergeErr c) (TypeTree c)
-merge (TypeTree leftImpl) path (TypeTree rightImpl) = do
+mergeAt (TypeTree leftImpl) path (TypeTree rightImpl) = do
   mergedImpl <- mapLeft ShapeErr $ LinkedTree.merge leftImpl path rightImpl
   withReducedConstraints <-
     mapLeft ConflictingConstraints $
     traverse Constraint.mergeConstraints mergedImpl
   return $ TypeTree withReducedConstraints
+
+merge x = mergeAt x []
 
 data ShiftErr =
   PathNotFound

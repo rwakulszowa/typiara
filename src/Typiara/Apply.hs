@@ -62,7 +62,7 @@ apply fun arg = do
   retBranch <- merged `shift'` [1]
   return $ Applied {argType = argBranch, retType = retBranch}
   where
-    merge' x path y = mapLeft MergeErr $ TypeTree.merge x path y
+    merge' x path = mapLeft MergeErr . TypeTree.mergeAt x path
     shift' tree path = mapLeft ShiftErr $ TypeTree.shift tree path
 
 data ApplicationContext argId c =
@@ -96,9 +96,9 @@ applyWithContext fun (ApplicationContext argTypeLookup argIds) = do
   return (ret, mergedConstraintsPerId)
   where
     group = Map.fromListWith mappend . fmap (\(k, v) -> (k, [v]))
-    mergeConstraints argId = mapLeft (ConflictingArgError argId) . foldM' merge'
+    mergeConstraints argId =
+      mapLeft (ConflictingArgError argId) . foldM' TypeTree.merge
       where
-        merge' x = TypeTree.merge x []
         foldM' f (x:xs) = foldM f x xs
 
 -- Traverse the `fun` tree, applying args sequentially.

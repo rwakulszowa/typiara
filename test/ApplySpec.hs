@@ -27,8 +27,6 @@ import Typiara.TypeDef (TypeDef(..))
 import Typiara.TypeTree (MergeErr(..), TypeTree(..))
 import Typiara.Utils (fromRight)
 
-mergeRoot x = TypeTree.merge x []
-
 buildLookup :: (Ord k) => [(k, v)] -> (k -> Maybe v)
 buildLookup assocs k = Map.fromList assocs Map.!? k
 
@@ -85,7 +83,7 @@ spec =
                 (Applied arg1 ret1) <- ret0 `apply` arg
                 return (arg0, arg1)
     -- Merge the constraints, because the same reference (`x`) is used in both cases.
-        (arg `mergeRoot` arg0 >>= mergeRoot arg1) `shouldBe`
+        (arg `TypeTree.merge` arg0 >>= TypeTree.merge arg1) `shouldBe`
           (Left . ConflictingConstraints . ConstraintErr $ ConstraintId "A")
     describe "applyWithContext" $ do
       it "(a -> b) x" $ do

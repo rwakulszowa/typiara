@@ -31,7 +31,7 @@ spec = do
     it "singleton" $
     singleton (ConstraintId "A") `shouldBe`
     (TypeTree $ linkedTree' (Node (Link "a") []) [(Link "a", ConstraintId "A")])
-  describe "merge" $ do
+  describe "mergeAt" $ do
     describe "nil offset" $ do
       it "singleton singleton" $ do
         let x =
@@ -40,7 +40,7 @@ spec = do
         let y =
               TypeTree $
               linkedTree' (Node (Link "a") []) [(Link "a", ConstraintId "A")]
-        merge x [] y `shouldBe` Right x
+        mergeAt x [] y `shouldBe` Right x
       it "subtree" $ do
         let x =
               TypeTree $
@@ -50,7 +50,7 @@ spec = do
         let y =
               TypeTree $
               linkedTree' (Node (Link "a") []) [(Link "a", ConstraintId "A")]
-        merge x [] y `shouldBe` Right x
+        mergeAt x [] y `shouldBe` Right x
       it
         "wide linked left + tall right copies right's children across left's branches" $ do
         let x =
@@ -66,7 +66,7 @@ spec = do
                 , (Link "b", ConstraintId "B")
                 , (Link "c", ConstraintId "C")
                 ]
-        merge x [] y `shouldBe`
+        mergeAt x [] y `shouldBe`
           (Right $
            TypeTree $
            linkedTree'
@@ -89,7 +89,7 @@ spec = do
         let y =
               TypeTree $
               linkedTree' (Node (Link "a") []) [(Link "a", ConstraintId "B")]
-        merge x [0] y `shouldBe` Right x
+        mergeAt x [0] y `shouldBe` Right x
       it "different shapes" $ do
         let x =
               TypeTree $
@@ -104,7 +104,7 @@ spec = do
               linkedTree'
                 (Node (Link "b") [Node (Link "d") []])
                 [(Link "b", ConstraintId "B"), (Link "d", ConstraintId "D")]
-        merge x [0] y `shouldBe`
+        mergeAt x [0] y `shouldBe`
           (Right $
            TypeTree $
            linkedTree'
@@ -125,7 +125,7 @@ spec = do
         let y =
               TypeTree $
               linkedTree' (Node (Link "b") []) [(Link "b", ConstraintId "B")]
-        merge x [0] y `shouldBe` Right x
+        mergeAt x [0] y `shouldBe` Right x
   describe "shift" $
     it "simple path" $ do
       let tree =
