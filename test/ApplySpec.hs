@@ -11,6 +11,7 @@ import Test.Hspec
 import qualified Data.Map.Strict as Map
 
 import Control.Monad ((>>=))
+import Data.Char (toUpper)
 import Data.Map (Map(..))
 import Data.Tree (Tree(..))
 
@@ -26,32 +27,37 @@ import Typiara.TypeDef (TypeDef(..))
 import Typiara.TypeTree (MergeErr(..), TypeTree(..))
 import Typiara.Utils (fromRight)
 
-linkedTree' :: Tree Link -> Map Link a -> LinkedTree a
-linkedTree' s v = fromRight $ LinkedTree.linkedTree s v
-
 mergeRoot x = TypeTree.merge x []
+
+buildLookup :: (Ord k) => [(k, v)] -> (k -> Maybe v)
+buildLookup assocs k = Map.fromList assocs Map.!? k
+
+-- Helper for building function types.
+-- Quite limited. All ids of the same value are considered linked.
+tx ids =
+  let (shape, constraints) = build 0 ids
+   in fromRight . TypeDef.intoTypeTree $
+      TypeDef shape (Map.fromList constraints)
+  where
+    build _ [x] = (Node x [], [(x, ConstraintId $ toUpper <$> x)])
+    build i (x:xs) =
+      let fId = "f" ++ show i
+          (childTree, childConstraints) = build (i + 1) xs
+       in ( Node fId [Node x [], childTree]
+          , [(x, ConstraintId $ toUpper <$> x), (fId, ConstraintId "Fun")] ++
+            childConstraints)
 
 spec :: Spec
 spec =
   describe "apply" $ do
-    it "(a -> b) a" $ do
-      let fun =
-            fromRight . TypeDef.intoTypeTree $
-            TypeDef
-              (Node "f" [Node "a" [], Node "b" []])
-              (Map.fromList
-                 [ ("f", ConstraintId "F")
-                 , ("a", ConstraintId "A")
-                 , ("b", ConstraintId "B")
-                 ])
-      let arg = TypeTree.singleton (ConstraintId "A")
-      fun `apply` arg `shouldBe`
-        (Right $
-         Applied
-           (TypeTree $
-            linkedTree' (Node (Link "a") []) [(Link "a", ConstraintId "A")])
-           (TypeTree $
-            linkedTree' (Node (Link "b") []) [(Link "b", ConstraintId "B")]))
+    let tAny = TypeTree.singleton AnyConstraint
+    let tA = tx ["a"]
+    let tB = tx ["b"]
+    let tC = tx ["c"]
+    describe "apply" $
+      it "(a -> b) a" $ do
+        let tAB = tx ["a", "b"]
+        tAB `apply` tA `shouldBe` (Right $ Applied tA tB)
     describe "validate application" $
       it "Fun :: A -> B -> A; Fun x x" $
     -- Apply the same argument to two different constraints.
@@ -81,3 +87,32 @@ spec =
     -- Merge the constraints, because the same reference (`x`) is used in both cases.
         (arg `mergeRoot` arg0 >>= mergeRoot arg1) `shouldBe`
           (Left . ConflictingConstraints . ConstraintErr $ ConstraintId "A")
+    describe "applyWithContext" $ do
+      it "(a -> b) x" $ do
+        let tAB = tx ["a", "b"]
+        tAB `applyWithContext`
+          (ApplicationContext
+             {argTypeLookup = buildLookup [('a', tAny)], argIds = ['a']}) `shouldBe`
+          Right (tB, [('a', tA)])
+      it "(a -> a -> b) a a" $
+        tx ["a", "a", "b"] `applyWithContext`
+        (ApplicationContext
+           { argTypeLookup = buildLookup [('a', tA), ('a', tA)]
+           , argIds = ['a', 'a']
+           }) `shouldBe`
+        Right (tB, [('a', tA)])
+      it "(a -> b -> c) a b" $
+        tx ["a", "b", "c"] `applyWithContext`
+        (ApplicationContext
+           { argTypeLookup = buildLookup [('a', tA), ('b', tB)]
+           , argIds = ['a', 'b']
+           }) `shouldBe`
+        Right (tC, [('a', tA), ('b', tB)])
+      it "(a -> b -> c) x x" $
+        tx ["a", "b", "b"] `applyWithContext`
+        (ApplicationContext
+           {argTypeLookup = buildLookup [('a', tAny)], argIds = ['a', 'a']}) `shouldBe`
+        (Left $
+         ConflictingArgError
+           'a'
+           (ConflictingConstraints . ConstraintErr $ ConstraintId "B"))

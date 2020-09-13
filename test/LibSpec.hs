@@ -72,7 +72,7 @@ spec =
             ([seqDef, incDef, composeDef, headDef] :: [TypeDef (Set Type)])
       -- functions with arguments flipped to aid composition.
     let merge' guest path host = TypeTree.merge host path guest
-    let apply' x y = Apply.ret <$> Apply.apply y x
+    let apply' x y = Apply.retType <$> Apply.apply y x
     describe "merge" $ do
       it "head . inc" $
         (pure compose >>= merge' inc [0] >>= merge' head [1, 0]) `shouldBe`
