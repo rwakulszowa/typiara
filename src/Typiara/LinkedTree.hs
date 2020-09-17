@@ -5,7 +5,6 @@ module Typiara.LinkedTree
   , linkedTree
   , shape
   , values
-  , ROLinkedTree(..)
   , ro
   , singleton
   , intoTree
@@ -60,19 +59,11 @@ data LinkedTree a =
   deriving (Show)
 
 -- Read-only variant of the above.
--- All operations are defined on non-RO variant, but its constructor is private.
--- The RO variant can be pettern matched on.
-data ROLinkedTree a =
-  ROLinkedTree
-    { roShape :: Tree Link
-    , roValues :: Map Link a
-    }
-  deriving (Show)
+-- Can be, to some extent, pattern matched on.
+ro (LinkedTree shape values) = (shape, values)
 
-ro (LinkedTree shape values) = ROLinkedTree shape values
-
-instance Eq a => Eq (ROLinkedTree a) where
-  (==) (ROLinkedTree leftShape leftValues) (ROLinkedTree rightShape rightValues) =
+instance Eq a => Eq (LinkedTree a) where
+  (==) (LinkedTree leftShape leftValues) (LinkedTree rightShape rightValues) =
     ((==) `on` rawShape) leftShape rightShape &&
     all
       (\(leftKey, rightKey) ->

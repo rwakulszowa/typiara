@@ -30,10 +30,7 @@ newtype TypeTree c =
   TypeTree
     { impl :: LinkedTree c
     }
-  deriving (Show)
-
-instance Eq c => Eq (TypeTree c) where
-  (==) (TypeTree implX) (TypeTree implY) = ((==) `on` LinkedTree.ro) implX implY
+  deriving (Show, Eq)
 
 singleton = TypeTree . LinkedTree.singleton
 
