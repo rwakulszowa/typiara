@@ -151,3 +151,10 @@ mapFromListWithKeyM f assocs =
 
 scanTree :: (Tree a -> b) -> Tree a -> Tree b
 scanTree f node@(Node _ children) = Node (f node) (scanTree f <$> children)
+
+mapKeysRejectConflicts ::
+     (Ord k, Ord k') => (k -> k') -> Map k v -> Maybe (Map k' v)
+mapKeysRejectConflicts f =
+  sequence . Map.mapKeysWith rejectConflict f . fmap Just
+  where
+    rejectConflict _ _ = Nothing

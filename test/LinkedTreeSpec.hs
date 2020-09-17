@@ -11,6 +11,7 @@ import Test.Hspec
 
 import qualified Data.Map.Strict as Map
 
+import Data.Function (on)
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Map (Map(..))
 
@@ -28,6 +29,37 @@ linkedTree' s v = Utils.fromRight $ linkedTree s v
 
 spec :: Spec
 spec = do
+  describe "eq" $ do
+    it "equal singletons" $ (==) (singleton 'A') (singleton 'A') `shouldBe` True
+    it "different values, same shapes" $
+      (==) (singleton 'A') (singleton 'B') `shouldBe` False
+    it "different shapes, same values" $
+      (==)
+        (linkedTree'
+           (Node (Link "A") [Node (Link "B") []])
+           [(Link "A", 1), (Link "B", 2)])
+        (linkedTree'
+           (Node (Link "A") [Node (Link "B") [], Node (Link "B") []])
+           [(Link "A", 1), (Link "B", 2)]) `shouldBe`
+      False
+    it "linked vs unlinked" $
+      (==)
+        (linkedTree'
+           (Node (Link "A") [Node (Link "B") [], Node (Link "B") []])
+           [(Link "A", 1), (Link "B", 2)])
+        (linkedTree'
+           (Node (Link "A") [Node (Link "B") [], Node (Link "C") []])
+           [(Link "A", 1), (Link "B", 2), (Link "C", 2)]) `shouldBe`
+      False
+    it "same shape and values, different ids" $
+      (==)
+        (linkedTree'
+           (Node (Link "A") [Node (Link "B") [], Node (Link "B") []])
+           [(Link "A", 1), (Link "B", 2)])
+        (linkedTree'
+           (Node (Link "X") [Node (Link "Y") [], Node (Link "Y") []])
+           [(Link "X", 1), (Link "Y", 2)]) `shouldBe`
+      True
   describe "fmap" $ do
     it "singleton" $
       ro ((+ 1) <$> linkedTree' (Node (Link "A") []) [(Link "A", 1)]) `shouldBe`

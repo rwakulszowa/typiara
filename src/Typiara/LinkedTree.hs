@@ -18,6 +18,7 @@ module Typiara.LinkedTree
   , scan
   ) where
 
+import qualified Data.List as List
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Tree as Tree
@@ -34,6 +35,7 @@ import Data.Traversable (mapAccumL)
 
 import qualified Typiara.Dag as Dag
 import qualified Typiara.Link as Link
+import qualified Typiara.UniqueItemSource as UniqueItemSource
 
 import Typiara.LeftOrRight (LeftOrRight)
 import Typiara.Link (Link(..))
@@ -44,6 +46,7 @@ import Typiara.Utils
   , fromRight
   , insertIfNew
   , invertMap
+  , mapKeysRejectConflicts
   , mapLeft
   , mapSnd
   , scanTree
@@ -63,15 +66,10 @@ data LinkedTree a =
 ro (LinkedTree shape values) = (shape, values)
 
 instance Eq a => Eq (LinkedTree a) where
-  (==) (LinkedTree leftShape leftValues) (LinkedTree rightShape rightValues) =
-    ((==) `on` rawShape) leftShape rightShape &&
-    all
-      (\(leftKey, rightKey) ->
-         leftValues Map.!? leftKey == rightValues Map.!? rightKey)
-      (leftShape `mzip` rightShape)
-    where
-      rawShape :: Tree x -> Tree ()
-      rawShape t = () <$ t
+  (==) l r =
+    let l' = refreshLinks l
+        r' = refreshLinks r
+     in ro l' == ro r'
 
 instance Functor LinkedTree where
   fmap f (LinkedTree shape values) = LinkedTree shape (fmap f values)
@@ -199,3 +197,19 @@ merge (LinkedTree hostShape hostValues) mergeLocation (LinkedTree guestShape gue
 scan :: (Eq a, Eq b, Show b) => (Tree a -> b) -> LinkedTree a -> LinkedTree b
 scan f =
   fromRight . fromTree . uncurry mzip . mapSnd (scanTree f) . munzip . intoTree
+
+-- Generate new set of links.
+-- Useful when exposing data to the external world, e.g. when comparing two different instances.
+-- Under no circumstances should crash. All unsafe operations depend on assumptions guaranteed by the smart constructor.
+-- TODO: consider refreshing before returning any internal data.
+refreshLinks :: LinkedTree a -> LinkedTree a
+refreshLinks (LinkedTree shape values) =
+  let allLinksInPreOrder = List.nub . Tree.flatten $ shape
+      oldToNewMap =
+        Map.fromList . fromRight $
+        allLinksInPreOrder `UniqueItemSource.zipUnique` Link.uniqueLinkSource
+      refresh k = oldToNewMap Map.! k
+   in fromRight $
+      linkedTree
+        (refresh <$> shape)
+        (fromJust $ mapKeysRejectConflicts refresh values)

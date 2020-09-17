@@ -4,6 +4,7 @@ module Typiara.UniqueItemSource
   , NextErr(..)
   , next
   , takeUnique
+  , zipUnique
   ) where
 
 import qualified Data.Set as Set
@@ -39,3 +40,10 @@ takeUnique n source = do
   (x, source) <- next source
   tail <- takeUnique (n - 1) source
   return $ x : tail
+
+-- Doesn't handle infinite lists too well.
+-- The computation cannot (AFAIK) be done lazily, because the wrapping Either has to be decided eagerly.
+zipUnique :: (Ord b) => [a] -> UniqueItemSource b -> Either (NextErr b) [(a, b)]
+zipUnique xs uis =
+  let n = length xs
+   in zip xs <$> takeUnique n uis
