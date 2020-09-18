@@ -7,6 +7,8 @@ module Typiara.LinkedTree
   , values
   , ro
   , singleton
+  , triple
+  , linkedTriple
   , intoTree
   , fromTree
   , expand
@@ -87,6 +89,32 @@ singleton :: a -> LinkedTree a
 singleton a = LinkedTree (Node root []) (Map.singleton root a)
   where
     root = Link "root"
+
+-- Build a linked tree of 3 nodes:
+--   - root
+--     - left
+--     - right
+-- Link ids are automatically generated.
+triple :: a -> a -> a -> LinkedTree a
+triple root left right =
+  let shape = Node rootLink [Node leftLink [], Node rightLink []]
+      values =
+        Map.fromList [(rootLink, root), (leftLink, left), (rightLink, right)]
+   in fromRight $ linkedTree shape values
+  where
+    leftLink = Link "left"
+    rightLink = Link "right"
+    rootLink = Link "root"
+
+-- Same as `triple`, except `left` and `right` are linked.
+linkedTriple :: a -> a -> LinkedTree a
+linkedTriple root leaf =
+  let shape = Node rootLink [Node leafLink [], Node leafLink []]
+      values = Map.fromList [(rootLink, root), (leafLink, leaf)]
+   in fromRight $ linkedTree shape values
+  where
+    leafLink = Link "leaf"
+    rootLink = Link "root"
 
 data LinkedTreeConstructorError =
   LinksOutOfSync

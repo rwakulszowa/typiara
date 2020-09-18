@@ -3,6 +3,8 @@
 module Typiara.TypeTree
   ( TypeTree(..)
   , singleton
+  , triple
+  , linkedTriple
   , Constraint
   , merge
   , mergeAt
@@ -33,6 +35,10 @@ newtype TypeTree c =
   deriving (Show, Eq)
 
 singleton = TypeTree . LinkedTree.singleton
+
+triple a b = TypeTree . LinkedTree.triple a b
+
+linkedTriple a = TypeTree . LinkedTree.linkedTriple a
 
 data MergeErr c
   = ShapeErr (LinkedTree.MergeErr c)
