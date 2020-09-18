@@ -17,9 +17,9 @@ import qualified Typiara.LinkedTree as LinkedTree
 import qualified Typiara.TypeDef as TypeDef
 import qualified Typiara.TypeTree as TypeTree
 
+import Typiara.Example.SimpleType
 import Typiara.Link (Link(..))
 import Typiara.LinkedTree (LinkedTree(..))
-import Typiara.Type
 import Typiara.TypeDef (TypeDef(..))
 import Typiara.TypeTree (TypeTree(..))
 import Typiara.Utils (fromRight)
@@ -29,12 +29,12 @@ spec =
   describe "merge" $
     -- [Int]
    do
-    let seqDef :: TypeDef (Set Type) =
+    let seqDef :: TypeDef (Set SimpleType) =
           TypeDef
             (Node "root" [Node "x" []])
             (Map.fromList [("root", [RigidType Seq]), ("x", [RigidType Int])])
     -- Int -> Int
-    let incDef :: TypeDef (Set Type) =
+    let incDef :: TypeDef (Set SimpleType) =
           TypeDef
             (Node "root" [Node "x" [], Node "x" []])
             (Map.fromList [("root", [RigidType Fun]), ("x", [RigidType Int])])
@@ -69,7 +69,7 @@ spec =
     let (Right [seq, inc, compose, head]) =
           mapM
             TypeDef.intoTypeTree
-            ([seqDef, incDef, composeDef, headDef] :: [TypeDef (Set Type)])
+            ([seqDef, incDef, composeDef, headDef] :: [TypeDef (Set SimpleType)])
       -- functions with arguments flipped to aid composition.
     let merge' guest path host = TypeTree.mergeAt host path guest
     let apply' x y = Apply.retType <$> Apply.apply y x

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedLists #-}
 
-module TypeSpec
+module Example.SimpleTypeSpec
   ( spec
   ) where
 
@@ -11,8 +11,8 @@ import qualified Data.Set as Set
 import Data.Either (isLeft)
 
 import Typiara.Constraint
+import Typiara.Example.SimpleType
 import Typiara.Link
-import Typiara.Type
 
 spec :: Spec
 spec =

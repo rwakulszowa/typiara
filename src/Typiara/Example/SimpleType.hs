@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Typiara.Type
-  ( Type(..)
+module Typiara.Example.SimpleType
+  ( SimpleType(..)
   , RigidType(..)
   , Requirement(..)
   ) where
@@ -43,7 +43,7 @@ satisfies Char Eq = True
 satisfies Seq _ = error "Derived requirements not yet implemented."
 satisfies _ _ = False
 
-data Type
+data SimpleType
   = RigidType RigidType
   | Requirement Requirement
   deriving (Eq, Show, Ord)
@@ -51,7 +51,7 @@ data Type
 isRigid (RigidType _) = True
 isRigid _ = False
 
-partitionType :: [Type] -> ([RigidType], [Requirement])
+partitionType :: [SimpleType] -> ([RigidType], [Requirement])
 partitionType = foldl appendToBucket ([], [])
   where
     appendToBucket (rigids, requirements) (RigidType r) =
@@ -60,14 +60,14 @@ partitionType = foldl appendToBucket ([], [])
       (rigids, r : requirements)
 
 -- TODO: newtype Types; non trivial constructor
--- what used to be an invalid TypeTree has now become an invalid (Set Type) -> add validation on this layer
-instance Constraint (Set Type) where
+-- what used to be an invalid TypeTree has now become an invalid (Set SimpleType) -> add validation on this layer
+instance Constraint (Set SimpleType) where
   mergeConstraints =
     fmap Set.fromList . mergeConstraints' . partitionType . Set.elems . sconcat
     where
       mergeConstraints' ::
            ([RigidType], [Requirement])
-        -> Either (ConstraintErr (Set Type)) [Type]
+        -> Either (ConstraintErr (Set SimpleType)) [SimpleType]
       mergeConstraints' ([], reqs) = Right (Requirement <$> reqs)
       mergeConstraints' ([rigid], reqs) =
         case (not . satisfies rigid) `filter` reqs of

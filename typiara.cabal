@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3def74e3169fd8bb492e5258923d0fde8d80055fe9294d8c58e57d7cc697221a
+-- hash: a95da859888a757d048f7167094cbe68aaeddedf240d2ef3776b0cb803f47f25
 
 name:           typiara
 version:        0.1.0.0
@@ -30,13 +30,13 @@ library
       Typiara.Apply
       Typiara.Constraint
       Typiara.Dag
+      Typiara.Example.SimpleType
       Typiara.LeftOrRight
       Typiara.Link
       Typiara.LinkedTree
       Typiara.MaybeEq
       Typiara.OneOrTwo
       Typiara.Path
-      Typiara.Type
       Typiara.TypeDef
       Typiara.TypeTree
       Typiara.UniqueItemSource
@@ -71,12 +71,12 @@ test-suite typiara-test
   other-modules:
       ApplySpec
       DagSpec
+      Example.SimpleTypeSpec
       LibSpec
       LinkedTreeSpec
       MaybeEqSpec
       TestConstraint
       TypeDefSpec
-      TypeSpec
       TypeTreeSpec
       UniqueItemSourceSpec
       UtilsSpec
