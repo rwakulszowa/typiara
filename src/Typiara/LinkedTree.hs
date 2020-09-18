@@ -18,6 +18,7 @@ module Typiara.LinkedTree
   , shift
   , draw
   , scan
+  , arePathsLinked
   ) where
 
 import qualified Data.List as List
@@ -30,6 +31,7 @@ import Data.Map.Strict (Map)
 import Data.Set (Set)
 import Data.Tree (Tree(..))
 
+import Control.Applicative ((<*>))
 import Control.Monad.Zip (munzip, mzip)
 import Data.Function (on)
 import Data.Maybe (fromJust)
@@ -241,3 +243,8 @@ refreshLinks (LinkedTree shape values) =
       linkedTree
         (refresh <$> shape)
         (fromJust $ mapKeysRejectConflicts refresh values)
+
+arePathsLinked :: Path -> Path -> LinkedTree a -> Either Path Bool
+arePathsLinked p0 p1 tree = (==) <$> tree `linkAt` p0 <*> tree `linkAt` p1
+  where
+    linkAt tree path = maybe (Left path) Right $ path `atPath` shape tree

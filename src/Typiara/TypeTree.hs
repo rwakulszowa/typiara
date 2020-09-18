@@ -12,6 +12,7 @@ module Typiara.TypeTree
   , shift
   , ShiftErr(..)
   , asTree
+  , arePathsLinked
   ) where
 
 import Data.Function (on)
@@ -70,3 +71,6 @@ shift (TypeTree impl) path =
 
 asTree :: TypeTree c -> LinkedTree c
 asTree (TypeTree impl) = impl
+
+arePathsLinked :: Path -> Path -> TypeTree c -> Either Path Bool
+arePathsLinked p0 p1 = LinkedTree.arePathsLinked p0 p1 . impl

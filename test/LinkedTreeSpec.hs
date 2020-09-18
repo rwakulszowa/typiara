@@ -264,3 +264,19 @@ spec = do
       let offset = [0, 0]
       (ro <$> merge host offset guest) `shouldBe`
         (Left $ DagMergeErr Dag.PathNotFound)
+  describe "arePathsLinked" $ do
+    it "singleton" $ arePathsLinked [0] [1] (singleton 'A') `shouldBe` Left [0]
+    it "triple" $
+      arePathsLinked [0] [1] (triple 'A' 'B' 'C') `shouldBe` Right False
+    it "linkedTriple" $
+      arePathsLinked [0] [1] (linkedTriple 'A' 'B') `shouldBe` Right True
+    it "different levels" $
+      arePathsLinked
+        [0, 0]
+        [1]
+        (linkedTree'
+           (Node
+              (Link "A")
+              [Node (Link "B") [Node (Link "C") []], Node (Link "C") []])
+           [(Link "A", 1), (Link "B", 2), (Link "C", 3)]) `shouldBe`
+      Right True
