@@ -16,6 +16,7 @@ module Typiara.LinkedTree
   , MergeErr(..)
   , merge
   , shift
+  , decompose
   , draw
   , scan
   , arePathsLinked
@@ -179,6 +180,20 @@ shift offset (LinkedTree shape values) = do
     LinkedTree shiftedShape (values `Map.restrictKeys` linkSet shiftedShape)
   where
     linkSet = Set.fromList . Tree.flatten
+
+-- Decompose a node into (root, children).
+-- Each node becomes an individual tree.
+-- Information about links across children is lost.
+decompose :: LinkedTree a -> (a, [LinkedTree a])
+decompose t =
+  (rootValue t, fromJust . traverse (`shift` t) $ take (size t) allPaths)
+  where
+    rootValue t = valueOf t . rootId $ t
+      where
+        valueOf tree id = values tree Map.! id
+        rootId = Tree.rootLabel . shape
+    allPaths = [[i] | i <- [0 ..]]
+    size = length . Tree.subForest . shape
 
 data MergeErr a
   = LookupError (LeftOrRight Link)

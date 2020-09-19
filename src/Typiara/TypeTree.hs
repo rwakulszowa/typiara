@@ -10,6 +10,7 @@ module Typiara.TypeTree
   , mergeAt
   , MergeErr(..)
   , shift
+  , decompose
   , ShiftErr(..)
   , asTree
   , arePathsLinked
@@ -24,7 +25,7 @@ import qualified Typiara.LinkedTree as LinkedTree
 
 import Typiara.LinkedTree (LinkedTree(..))
 import Typiara.Path (Path(..))
-import Typiara.Utils (mapLeft, maybeError)
+import Typiara.Utils (mapLeft, mapSnd, maybeError)
 
 import Typiara.Constraint (Constraint, ConstraintErr(..))
 
@@ -68,6 +69,9 @@ data ShiftErr =
 shift :: (Constraint c) => TypeTree c -> Path -> Either ShiftErr (TypeTree c)
 shift (TypeTree impl) path =
   TypeTree <$> maybeError PathNotFound (path `LinkedTree.shift` impl)
+
+decompose :: (Constraint c) => TypeTree c -> (c, [TypeTree c])
+decompose = mapSnd (map TypeTree) . LinkedTree.decompose . impl
 
 asTree :: TypeTree c -> LinkedTree c
 asTree (TypeTree impl) = impl

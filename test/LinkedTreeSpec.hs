@@ -264,6 +264,27 @@ spec = do
       let offset = [0, 0]
       (ro <$> merge host offset guest) `shouldBe`
         (Left $ DagMergeErr Dag.PathNotFound)
+  describe "decompose" $ do
+    it "singleton" $ decompose (singleton 'A') `shouldBe` ('A', [])
+    it "single child" $
+      decompose
+        (linkedTree'
+           (Node (Link "a") [Node (Link "b") []])
+           [(Link "a", 'A'), (Link "b", 'B')]) `shouldBe`
+      ('A', [singleton 'B'])
+    it "triple" $
+      decompose (triple 'A' 'B' 'C') `shouldBe`
+      ('A', [singleton 'B', singleton 'C'])
+    it "nested" $
+      decompose
+        (linkedTree'
+           (Node (Link "a") [Node (Link "b") [Node (Link "c") []]])
+           [(Link "a", 'A'), (Link "b", 'B'), (Link "c", 'C')]) `shouldBe`
+      ( 'A'
+      , [ linkedTree'
+            (Node (Link "b") [Node (Link "c") []])
+            [(Link "b", 'B'), (Link "c", 'C')]
+        ])
   describe "arePathsLinked" $ do
     it "singleton" $ arePathsLinked [0] [1] (singleton 'A') `shouldBe` Left [0]
     it "triple" $
