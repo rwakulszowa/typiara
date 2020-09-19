@@ -13,6 +13,7 @@ import Data.Tree (Tree(..))
 
 import Data.Semigroup (sconcat)
 
+import Typiara.ApplicableConstraint
 import Typiara.Constraint
 
 -- Simplified, statically defined, Haskell-like type system.
@@ -78,3 +79,7 @@ instance Constraint (Set SimpleType) where
             Set.fromList (RigidType rigid : (Requirement <$> conflicts))
       mergeConstraints' (rigids, _) =
         Left $ ConstraintErr $ Set.fromList $ RigidType <$> rigids
+
+instance ApplicableConstraint (Set SimpleType) where
+  funConstraint = Set.singleton . RigidType $ Fun
+  nilConstraint = Set.empty

@@ -18,9 +18,13 @@ import qualified Typiara.Constraint as Constraint
 import qualified Typiara.TypeTree as TypeTree
 
 import Typiara.TypeTree (MergeErr, TypeTree(..))
-import Typiara.Utils (mapLeft)
+import Typiara.Utils (fromRight, mapLeft)
 
-import Typiara.Constraint (Constraint)
+import Typiara.ApplicableConstraint
+  ( ApplicableConstraint
+  , funConstraint
+  , nilConstraint -- TODO: consider moving to `Constraint`
+  )
 
 -- Application of `TypeTree`s.
 --
@@ -35,7 +39,7 @@ import Typiara.Constraint (Constraint)
 --  - the caller is responsible for merging `arg` items of both `apply` calls, as they map to
 --    the same reference
 --  - the merged constraint will require `x` to satisfy Num and Str.
---    Whether that's acceptable is up to `Constraint`.
+--    Whether that's acceptable is up to `ApplicableConstraint`.
 -- The result of a successful function application on a `TypeTree`.
 -- Pieces are disjoint - they are not linked in any way.
 data Applied c =
@@ -48,20 +52,30 @@ data Applied c =
 data ApplyErr c
   = ShiftErr TypeTree.ShiftErr
   | MergeErr (TypeTree.MergeErr c)
+  | AddFunConstraintErr (TypeTree.MergeErr c)
   deriving (Eq, Show)
 
--- TODO: check if fun is applicable (add a Constraint method)
 apply ::
-     (Constraint c, Ord c, Show c)
+     (ApplicableConstraint c, Ord c, Show c)
   => TypeTree c
   -> TypeTree c
   -> Either (ApplyErr c) (Applied c)
 apply fun arg = do
-  merged <- merge' fun [0] arg
+  extendedFun <- addFunConstraint fun
+  merged <- merge' extendedFun [0] arg
   argBranch <- merged `shift'` [0]
   retBranch <- merged `shift'` [1]
   return $ Applied {argType = argBranch, retType = retBranch}
+    -- Merge with a minimal function application tree, extending its shape and constraints, if need be.
   where
+    addFunConstraint funNode =
+      mapLeft AddFunConstraintErr $
+      TypeTree.merge funNode minimalApplicationTree
+        -- Minimal tree representing an function.
+        -- Branches are not linked. After merging with the main tree, its links will propagate.
+      where
+        minimalApplicationTree =
+          TypeTree.triple funConstraint nilConstraint nilConstraint
     merge' x path = mapLeft MergeErr . TypeTree.mergeAt x path
     shift' tree path = mapLeft ShiftErr $ TypeTree.shift tree path
 
@@ -85,7 +99,7 @@ data ApplyWithContextErr argId c
 -- The size of argConstraints may be smaller than that of `args` if the same argument is applied multiple times.
 -- If that's the case, individual constraints will be merged.
 applyWithContext ::
-     (Eq argId, Ord argId, Constraint c, Ord c, Show c)
+     (Eq argId, Ord argId, ApplicableConstraint c, Ord c, Show c)
   => TypeTree c
   -> ApplicationContext argId c
   -> Either (ApplyWithContextErr argId c) (TypeTree c, Map argId (TypeTree c))

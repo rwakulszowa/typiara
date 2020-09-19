@@ -188,11 +188,17 @@ merge idSource left offset right = do
   let combinedDiff =
         Map.unionWithKey rejectConflicts idsMapping (idsMappingFun <$> diff)
   return (mapIds idsMappingFun merged, combinedDiff)
+    -- Reject if one key maps to different values.
   where
-    rejectConflicts key _ _ = error $ show key
+    rejectConflicts key v0 v1 =
+      if v0 == v1
+        then v0
+        else error $ show ("DAG.combinedDiff conflict", key, v0, v1)
     buildFreshIds count source =
       mapLeft IdSourceErr $ UniqueItemSource.takeUnique count source
 
+-- In some circumstances, the diff may contain a mapping of a value to itself.
+-- There should be no assumptions regarding `merged` and `diff` being disjoint.
 merge' ::
      (Ord id, Show id)
   => Dag id

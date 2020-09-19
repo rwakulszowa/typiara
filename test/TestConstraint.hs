@@ -3,11 +3,13 @@ module TestConstraint where
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NonEmpty
 
+import Typiara.ApplicableConstraint
 import Typiara.Constraint
 
 data TestConstraint
   = Fail
   | AnyConstraint
+  | FunConstraint
   | ConstraintId String
   deriving (Eq, Show, Ord)
 
@@ -24,3 +26,7 @@ instance Constraint TestConstraint where
               if all (== c) cs
                 then Right c
                 else Left . ConstraintErr $ c
+
+instance ApplicableConstraint TestConstraint where
+  funConstraint = FunConstraint
+  nilConstraint = AnyConstraint

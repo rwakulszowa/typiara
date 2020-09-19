@@ -82,6 +82,17 @@ spec = do
             , (Right 'D', 'b')
             , (Right 'E', 'b')
             ])
+    it "simple simple [] with links; exact match" $ do
+      let x = fromTree' (Node 'A' [Node 'B' [], Node 'B' []])
+      let y = fromTree' (Node 'C' [Node 'D' [], Node 'D' []])
+      merge idSource x [] y `shouldBe`
+        Right
+          ( fromTree' (Node 'a' [Node 'b' [], Node 'b' []])
+          , [ (Left 'A', 'a')
+            , (Left 'B', 'b')
+            , (Right 'C', 'a')
+            , (Right 'D', 'b')
+            ])
     it "simple simple [1] with links" $ do
       let x = fromTree' (Node 'A' [Node 'B' [], Node 'B' []])
       let y = fromTree' (Node 'C' [Node 'D' [], Node 'D' []])

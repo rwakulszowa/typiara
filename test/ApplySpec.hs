@@ -42,7 +42,7 @@ tx ids =
       let fId = "f" ++ show i
           (childTree, childConstraints) = build (i + 1) xs
        in ( Node fId [Node x [], childTree]
-          , [(x, ConstraintId $ toUpper <$> x), (fId, ConstraintId "Fun")] ++
+          , [(x, ConstraintId $ toUpper <$> x), (fId, FunConstraint)] ++
             childConstraints)
 
 spec :: Spec
@@ -52,10 +52,13 @@ spec =
     let tA = tx ["a"]
     let tB = tx ["b"]
     let tC = tx ["c"]
-    describe "apply" $
+    describe "apply" $ do
       it "(a -> b) a" $ do
         let tAB = tx ["a", "b"]
         tAB `apply` tA `shouldBe` (Right $ Applied tA tB)
+      it "hof: any a" $ do
+        let tAnyAny = TypeTree.triple FunConstraint AnyConstraint AnyConstraint
+        tAny `apply` tA `shouldBe` (Right $ Applied tA tAny)
     describe "validate application" $
       it "Fun :: A -> B -> A; Fun x x" $
     -- Apply the same argument to two different constraints.
@@ -66,8 +69,8 @@ spec =
               TypeDef
                 (Node "f" [Node "a" [], Node "f'" [Node "b" [], Node "c" []]])
                 (Map.fromList
-                   [ ("f", ConstraintId "F")
-                   , ("f'", ConstraintId "F")
+                   [ ("f", FunConstraint)
+                   , ("f'", FunConstraint)
                    , ("a", ConstraintId "A")
                    , ("b", ConstraintId "B")
                    , ("c", ConstraintId "B")
@@ -106,8 +109,16 @@ spec =
            , argIds = ['a', 'b']
            }) `shouldBe`
         Right (tC, [('a', tA), ('b', tB)])
-      it "(a -> b -> c) x x" $
+      it "(a -> b -> b) x x" $
         tx ["a", "b", "b"] `applyWithContext`
+        (ApplicationContext
+           {argTypeLookup = buildLookup [('x', tAny)], argIds = ['x', 'x']}) `shouldBe`
+        (Left $
+         ConflictingArgError
+           'x'
+           (ConflictingConstraints . ConstraintErr $ ConstraintId "B"))
+      it "(a -> b -> c) x x" $
+        tx ["a", "b", "c"] `applyWithContext`
         (ApplicationContext
            {argTypeLookup = buildLookup [('a', tAny)], argIds = ['a', 'a']}) `shouldBe`
         (Left $
