@@ -47,6 +47,8 @@ data MergeErr c
   | ConflictingConstraints (ConstraintErr c)
   deriving (Eq, Show)
 
+-- TODO: make more strict; it should be an error to arbitrarily change shapes of nodes;
+-- only nodes explicitly marked as nil / placeholders should be allowed to change shape
 mergeAt ::
      (Ord c, Constraint c, Show c)
   => TypeTree c

@@ -72,7 +72,8 @@ spec =
             ([seqDef, incDef, composeDef, headDef] :: [TypeDef (Set SimpleType)])
       -- functions with arguments flipped to aid composition.
     let merge' guest path host = TypeTree.mergeAt host path guest
-    let apply' x y = Apply.retType <$> Apply.apply y x
+    let apply' arg fun =
+          Apply.appliedRet <$> arg `Apply.apply` Apply.applied fun
     describe "merge" $ do
       it "head . inc" $
         (pure compose >>= merge' inc [0] >>= merge' head [1, 0]) `shouldBe`
