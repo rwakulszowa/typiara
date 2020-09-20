@@ -15,6 +15,7 @@ import qualified Data.Map.Strict as Map
 
 import Control.Monad (foldM)
 import Data.Function (on)
+import Data.List (nub)
 import Data.Map (Map)
 import Data.Maybe (fromJust)
 import Data.Tree (Tree(..))
@@ -25,7 +26,7 @@ import qualified Typiara.TypeTree as TypeTree
 
 import Typiara.Path (Path)
 import Typiara.TypeTree (MergeErr, TypeTree(..))
-import Typiara.Utils (fromRight, mapLeft, tenumerate)
+import Typiara.Utils (fromRight, mapLeft, sequenceSnd, tenumerate)
 
 import Typiara.ApplicableConstraint
   ( ApplicableConstraint
@@ -128,27 +129,59 @@ data ApplyWithContextErr argId c
       { conflictingArgId :: argId
       , err :: MergeErr c
       }
+  | FailedLinkError argId [TypeTree c] -- Returned if shallow linking fails and linked items are not identical.
   deriving (Eq, Show)
 
 -- Apply each arg to `fun`, from left to right.
--- If the same argId is applied multiple times, its nodes are linked.
+-- Returns (functionType, Map argId argType).
+-- If the same argId is applied multiple times, its nodes are merged together.
+--
+-- Decomposes the tree. Any links across trees are broken.
 applyWithContext ::
      (Eq argId, Ord argId, ApplicableConstraint c, Ord c, Show c)
   => TypeTree c
   -> ApplicationContext argId c
-  -> Either (ApplyWithContextErr argId c) (TypeTree c)
+  -> Either (ApplyWithContextErr argId c) (TypeTree c, Map argId (TypeTree c))
 applyWithContext fun (ApplicationContext argTypeLookup argIds) = do
-  (Applied retBeforeLinking _) <- applyEach argTypeLookup fun argIds
-  foldM linkSingleArgIndices retBeforeLinking (Map.assocs $ indicesPerId argIds)
+  retBeforeLinking <- applyEach argTypeLookup fun argIds
+  let idZipIndices = Map.assocs $ indicesPerId argIds
+  -- For each arg that appears more than once in the arg list, shallow-link its nodes.
+  appliedAndLinked <- foldM linkSingleArgIndices retBeforeLinking idZipIndices
+  -- Look up final types for each arg index.
+  idZipTypes <-
+    mapM
+      sequenceSnd
+      [ (id, mapM (lookupIndexOrErr appliedAndLinked id) indices)
+      | (id, indices) <- idZipIndices
+      ]
+  -- Validate that supposedly linked nodes are identical.
+  deduplicatedIdToType <-
+    mapM
+      sequenceSnd
+      [ ( argId
+        , either (Left . FailedLinkError argId) Right (deduplicateOrErr types))
+      | (argId, types) <- idZipTypes
+      ]
+  return (appliedTree appliedAndLinked, Map.fromList deduplicatedIdToType)
   where
     indicesPerId :: (Ord a) => [a] -> Map a [Int]
     indicesPerId = group . map swap . tenumerate
       where
         group = Map.fromListWith mappend . fmap (\(k, v) -> (k, [v]))
-    linkSingleArgIndices tree (argId, is) =
-      mapLeft (ConflictingArgError argId) $ linkIndices tree is
-    linkIndices tree [i] = Right tree -- noop for a singleton index
-    linkIndices tree (i:is) = foldM (linkIndices' i) tree is
+    lookupIndexOrErr applied argId index =
+      maybe
+        (Left $ ArgTypeLookupError argId)
+        Right
+        (applied `appliedArgN` index)
+    deduplicateOrErr xs =
+      case nub xs of
+        [x] -> Right x
+        xs' -> Left xs'
+    linkSingleArgIndices applied (argId, is) =
+      mapLeft (ConflictingArgError argId) $ linkIndices applied is
+    linkIndices applied [i] = Right applied -- noop for a singleton index
+    linkIndices (Applied tree count) (i:is) =
+      Applied <$> foldM (linkIndices' i) tree is <*> pure count
       where
         linkIndices' i tree j = shallowLink tree (argPath i) (argPath j)
       -- Make two nodes equivalent by performing a two way merge (i.e. `merge tree a b`, `merge tree b a`),

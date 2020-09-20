@@ -93,21 +93,23 @@ spec = do
       tAB `applyWithContext`
         (ApplicationContext
            {argTypeLookup = buildLookup [('a', tAny)], argIds = ['a']}) `shouldBe`
-        Right tAB
-    it "(a -> a -> b) a a" $
-      tx ["a", "a", "b"] `applyWithContext`
-      (ApplicationContext
-         { argTypeLookup = buildLookup [('a', tA), ('a', tA)]
-         , argIds = ['a', 'a']
-         }) `shouldBe`
-      Right (tx ["a", "a", "b"])
-    it "(a -> b -> c) a b" $
-      tx ["a", "b", "c"] `applyWithContext`
-      (ApplicationContext
-         { argTypeLookup = buildLookup [('a', tA), ('b', tB)]
-         , argIds = ['a', 'b']
-         }) `shouldBe`
-      Right (tx ["a", "b", "c"])
+        Right (tAB, [('a', tA)])
+    it "(a -> a -> b) a a" $ do
+      let tAAB = tx ["a", "a", "b"]
+      tAAB `applyWithContext`
+        (ApplicationContext
+           { argTypeLookup = buildLookup [('a', tA), ('a', tA)]
+           , argIds = ['a', 'a']
+           }) `shouldBe`
+        Right (tAAB, [('a', tA)])
+    it "(a -> b -> c) a b" $ do
+      let tABC = tx ["a", "b", "c"]
+      tABC `applyWithContext`
+        (ApplicationContext
+           { argTypeLookup = buildLookup [('a', tA), ('b', tB)]
+           , argIds = ['a', 'b']
+           }) `shouldBe`
+        Right (tABC, [('a', tA), ('b', tB)])
     it "(a -> b -> b) x x" $
       tx ["a", "b", "b"] `applyWithContext`
       (ApplicationContext
