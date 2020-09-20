@@ -7,6 +7,7 @@ module Typiara.Apply
   , appliedRet
   , ApplyErr(..)
   , applyWithContext
+  , AppliedWithContext(..)
   , ApplyWithContextErr(..)
   , ApplicationContext(..)
   ) where
@@ -122,6 +123,14 @@ data ApplicationContext argId c =
     , argIds :: [argId]
     }
 
+data AppliedWithContext argId c =
+  AppliedWithContext
+    { funType :: TypeTree c
+    , retType :: TypeTree c
+    , argTypes :: Map argId (TypeTree c)
+    }
+  deriving (Eq, Show)
+
 data ApplyWithContextErr argId c
   = ApplyError (ApplyErr c)
   | ArgTypeLookupError argId
@@ -141,7 +150,7 @@ applyWithContext ::
      (Eq argId, Ord argId, ApplicableConstraint c, Ord c, Show c)
   => TypeTree c
   -> ApplicationContext argId c
-  -> Either (ApplyWithContextErr argId c) (TypeTree c, Map argId (TypeTree c))
+  -> Either (ApplyWithContextErr argId c) (AppliedWithContext argId c)
 applyWithContext fun (ApplicationContext argTypeLookup argIds) = do
   retBeforeLinking <- applyEach argTypeLookup fun argIds
   let idZipIndices = Map.assocs $ indicesPerId argIds
@@ -162,7 +171,12 @@ applyWithContext fun (ApplicationContext argTypeLookup argIds) = do
         , either (Left . FailedLinkError argId) Right (deduplicateOrErr types))
       | (argId, types) <- idZipTypes
       ]
-  return (appliedTree appliedAndLinked, Map.fromList deduplicatedIdToType)
+  return
+    (AppliedWithContext
+       { funType = appliedTree appliedAndLinked
+       , retType = appliedRet appliedAndLinked
+       , argTypes = Map.fromList deduplicatedIdToType
+       })
   where
     indicesPerId :: (Ord a) => [a] -> Map a [Int]
     indicesPerId = group . map swap . tenumerate
