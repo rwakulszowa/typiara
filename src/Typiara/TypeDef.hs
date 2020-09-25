@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Typiara.TypeDef
   ( LinkId
@@ -11,6 +12,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Tree as Tree
 
+import Data.Functor.Classes (compare1)
 import Data.Map (Map)
 import Data.Set (Set)
 import Data.Tree (Tree)
@@ -38,7 +40,11 @@ data TypeDef constraint =
     { shape :: Tree LinkId
     , constraints :: Map LinkId constraint
     }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
+
+-- To derive `Ord` on `TypeDef`.
+instance Ord (Tree LinkId) where
+  compare = compare1
 
 intoLinkedTree ::
      (Show c, Eq c, Constraint c, Ord c)
