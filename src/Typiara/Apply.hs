@@ -146,6 +146,11 @@ data ApplyWithContextErr argId c
 -- If the same argId is applied multiple times, its nodes are merged together.
 --
 -- Decomposes the tree. Any links across trees are broken.
+--
+-- TODO: either:
+--  - do not decompose the tree, to keep the links intact
+--  - allow one to recompose the tree by exporting a proper linking mechanism
+--  - or some combination of the above; introduce a mechanism of building trees of `Applied`, allowing composition and decomposition, instead of just a single function.
 applyWithContext ::
      (Eq argId, Ord argId, ApplicableConstraint c, Ord c, Show c)
   => TypeTree c
