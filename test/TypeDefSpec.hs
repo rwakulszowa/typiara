@@ -21,7 +21,7 @@ linkedTree' :: Tree Link -> Map Link a -> LinkedTree a
 linkedTree' s v = fromRight $ linkedTree s v
 
 spec :: Spec
-spec =
+spec = do
   describe "intoTypeTree" $ do
     it "singleton" $
       intoTypeTree (TypeDef (Node "a" []) [("a", ConstraintId "C0")]) `shouldBe`
@@ -60,3 +60,33 @@ spec =
             , (Link "0", ConstraintId "C1")
             , (Link "1", ConstraintId "C2")
             ]))
+  describe "fromTypeTree" $ do
+    it "singleton" $
+      fromTypeTree
+        (TypeTree $
+         linkedTree' (Node (Link "a") []) [(Link "a", ConstraintId "C0")]) `shouldBe`
+      TypeDef (Node "a" []) [("a", ConstraintId "C0")]
+    it "linked" $
+      fromTypeTree
+        (TypeTree $
+         linkedTree'
+           (Node (Link "a") [Node (Link "b") [], Node (Link "b") []])
+           [(Link "a", ConstraintId "C0"), (Link "b", ConstraintId "C1")]) `shouldBe`
+      TypeDef
+        (Node "a" [Node "b" [], Node "b" []])
+        [("a", ConstraintId "C0"), ("b", ConstraintId "C1")]
+  describe "toTypeTree . fromTypeTree round trip" $
+    -- | Validate that no information is lost in the transition.
+    -- | May detect if some additional metadata is added to TypeTree, but not yet reflected
+    -- | in TypeDef.
+   do
+    let round td = fromTypeTree <$> intoTypeTree td
+    it "singleton" $ do
+      let td = TypeDef (Node "a" []) [("a", ConstraintId "C0")]
+      round td `shouldBe` Right td
+    it "linked" $ do
+      let td =
+            TypeDef
+              (Node "a" [Node "b" [], Node "b" []])
+              [("a", ConstraintId "C0"), ("b", ConstraintId "C1")]
+      round td `shouldBe` Right td

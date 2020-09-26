@@ -17,6 +17,7 @@ module Typiara.LinkedTree
   , merge
   , shift
   , decompose
+  , refreshLinks
   , draw
   , scan
   , arePathsLinked

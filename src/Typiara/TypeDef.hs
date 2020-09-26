@@ -6,9 +6,11 @@ module Typiara.TypeDef
   ( LinkId
   , TypeDef(..)
   , intoTypeTree
+  , fromTypeTree
   ) where
 
 import qualified Data.Map.Strict as Map
+import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 import qualified Data.Tree as Tree
 
@@ -27,12 +29,17 @@ import Typiara.Link (Link(..))
 import Typiara.LinkedTree (LinkedTree(..))
 import Typiara.Path (Step)
 import Typiara.TypeTree (TypeTree(..))
-import Typiara.Utils (enumerateTree, mapLeft)
+import Typiara.Utils (enumerateTree, mapKeysRejectConflicts, mapLeft)
 
 -- Definition of a type.
 -- 
 -- Provides a relatively stable, user facing interface.
 -- Should not change as often as the implementation, hopefully.
+--
+-- `TypeDef` is expected to be used in user facing scenarios. `TypeTree` is allowed
+-- to grow aribitrarily complex, therefore serializing it and showing to the user
+-- may not be a good idea. `TypeDef` solves this problem by providing a readable,
+-- easily serializable representation of a type.
 type LinkId = String
 
 data TypeDef constraint =
@@ -60,3 +67,14 @@ intoTypeTree ::
   => TypeDef c
   -> Either String (TypeTree c)
 intoTypeTree = fmap TypeTree . intoLinkedTree
+
+fromTypeTree :: TypeTree c -> TypeDef c
+fromTypeTree (TypeTree linkedTree) =
+  let freshTree = LinkedTree.refreshLinks linkedTree
+   in fromTypeTree' (LinkedTree.shape freshTree) (values freshTree)
+  where
+    fromTypeTree' shape values =
+      TypeDef (unlink <$> shape) (mapKeys' unlink values)
+      where
+        mapKeys' f m = Maybe.fromJust $ mapKeysRejectConflicts f m -- Guaranteed by `LinkedTree` contract not to cause conflicts. Crash explicitly if not true.
+        unlink (Link value) = value
