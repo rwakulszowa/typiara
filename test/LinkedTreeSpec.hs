@@ -264,6 +264,20 @@ spec = do
       let offset = [0, 0]
       (ro <$> merge host offset guest) `shouldBe`
         (Left $ DagMergeErr Dag.PathNotFound)
+    it "incompatible shapes - reject a cycle" $ do
+      let host =
+            linkedTree'
+              (Node (Link "a") [Node (Link "b") [], Node (Link "b") []])
+              [(Link "a", ()), (Link "b", ())]
+      let guest =
+            linkedTree'
+              (Node
+                 (Link "a")
+                 [Node (Link "b") [], Node (Link "c") [Node (Link "b") []]])
+              [(Link "a", ()), (Link "b", ()), (Link "c", ())]
+      let offset = []
+      (ro <$> merge host offset guest) `shouldBe`
+        (Left $ DagMergeErr Dag.Cycle)
   describe "decompose" $ do
     it "singleton" $ decompose (singleton 'A') `shouldBe` ('A', [])
     it "single child" $

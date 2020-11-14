@@ -48,6 +48,8 @@ type EdgeDst id = id
 -- A Directed Acyclic Graph with indexed edges.
 -- Indexing edges makes it possible to represent an exact tree shape, i.e. not only parent <-> child
 -- relations, but also where the connection is defined (e.g. `b` is `a`'s first child, `c` is `a`'s second child).
+--
+-- TODO: smart constructor, reject cycles.
 data Dag id =
   Dag
     { rootId :: id
@@ -70,6 +72,35 @@ allIds (Dag rootId edges) =
 
 hasId :: (Ord id) => Dag id -> id -> Bool
 hasId dag id = id `Set.member` allIds dag
+
+detectCycles :: (Ord id) => Dag id -> Maybe [id]
+detectCycles dag@(Dag rootId edges) =
+  case go [] rootId dag of
+    Left cycle -> Just cycle
+    Right () -> Nothing
+  where
+    go pathSoFar nodeId dag
+          -- Cycles are returned as `Left`s to make short-circuiting easier.
+          -- The top level function is responsible for inverting the functor, turning `Left` into `Just`.
+      | nodeId `elem` pathSoFar = Left (nodeId : pathSoFar)
+      | otherwise =
+        const () <$>
+        (sequence $
+         [ go (nodeId : pathSoFar) child dag
+         | child <- fromJust $ children nodeId dag
+         ])
+
+-- Get ids of nodes reachable from `node`.
+-- `Nothing` if lookup fails. Only possible if dag is invalid.
+-- TODO: simplify after `Dag` internal types refactoring.
+children :: (Ord id) => id -> Dag id -> Maybe [id]
+children node dag =
+  either (const Nothing) Just $
+  denumerateSequence
+    [ (index src, dst)
+    | (src, dst) <- Map.assocs . edges $ dag
+    , srcId src == node
+    ]
 
 -- Build a `Dag` from a tree of ids.
 -- Nodes with the same `id` are considered linked and end up forming a single DAG node.
@@ -163,6 +194,7 @@ mapIdsWithConflictCheck fun (Dag rootId edges) = do
 data MergeErr id
   = PathNotFound
   | IdSourceErr (UniqueItemSource.NextErr id)
+  | Cycle -- TODO: include the path, mapped to external arg ids
   deriving (Eq, Show)
 
 if' :: (a -> Bool) -> (a -> a) -> (a -> a)
@@ -206,20 +238,21 @@ merge' ::
   -> Dag id
   -> Either (MergeErr id) ( Dag (LeftOrRight id)
                           , Map (LeftOrRight id) (LeftOrRight id))
-merge' left offset right = do
-  mappedLeft@(Dag leftRoot leftEdges) <- pure $ mapIds Left left
-  mappedRight@(Dag rightRoot rightEdges) <- pure $ mapIds Right right
-  leftNodeAtOffset <- maybeError PathNotFound $ mappedLeft `at` offset
-  if null mappedRight
-    then return (mappedLeft, Map.singleton rightRoot leftNodeAtOffset)
+merge' left offset right =
+  rejectCycles =<< do
+    mappedLeft@(Dag leftRoot leftEdges) <- pure $ mapIds Left left
+    mappedRight@(Dag rightRoot rightEdges) <- pure $ mapIds Right right
+    leftNodeAtOffset <- maybeError PathNotFound $ mappedLeft `at` offset
+    if null mappedRight
+      then return (mappedLeft, Map.singleton rightRoot leftNodeAtOffset)
     -- Create an overlap by replacing the right root with an injected id in all edges.
     -- The overlap is then propagated across the whole graph.
-    else let (resolved, diffMap) =
-               let (initialDiff, withInjectedOverlap) =
-                     injectInitialOverlap leftNodeAtOffset mappedRight
-                in resolveOverlappingEdges initialDiff $
-                   buildOverlapping [leftEdges, edges withInjectedOverlap]
-          in return (rebuildDag resolved leftRoot, diffMap)
+      else let (resolved, diffMap) =
+                 let (initialDiff, withInjectedOverlap) =
+                       injectInitialOverlap leftNodeAtOffset mappedRight
+                  in resolveOverlappingEdges initialDiff $
+                     buildOverlapping [leftEdges, edges withInjectedOverlap]
+            in return (rebuildDag resolved leftRoot, diffMap)
   where
     injectInitialOverlap injectedId dag =
       let droppedId = rootId dag
@@ -231,6 +264,10 @@ merge' left offset right = do
       case EdgeSrc cachedRoot 0 `Map.lookup` resolvedEdges of
         Just _ -> Dag cachedRoot resolvedEdges
         Nothing -> error "Root is missing"
+    rejectCycles (dag, diff) =
+      case detectCycles dag of
+        (Just _) -> Left $ Cycle
+        Nothing -> Right (dag, diff)
 
 -- Remove duplicate edges by merging duplicate `dst` nodes.
 --

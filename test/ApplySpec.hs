@@ -15,6 +15,7 @@ import Data.Char (toUpper)
 import Data.Map (Map(..))
 import Data.Tree (Tree(..))
 
+import qualified Typiara.Dag as Dag
 import qualified Typiara.LinkedTree as LinkedTree
 import qualified Typiara.TypeDef as TypeDef
 import qualified Typiara.TypeTree as TypeTree
@@ -60,6 +61,27 @@ spec = do
       appliedTree <$>
       tAny `apply'` tA `shouldBe`
       (Right $ TypeTree.triple FunConstraint (ConstraintId "A") AnyConstraint)
+    it "incompatible pair introducing a cycle" $
+      -- Validates that invalid arguments are rejected.
+      -- The scenario reproduced below used to cause an infinite loop during DAG reconstruction
+      -- due to `x[0]` and `y` link structure.
+     do
+      let x =
+            fromRight . TypeDef.intoTypeTree $
+            TypeDef
+              (Node "a" [Node "b" [Node "d" [], Node "d" []], Node "c" []])
+              [ ("a", FunConstraint)
+              , ("b", FunConstraint)
+              , ("c", AnyConstraint)
+              , ("d", AnyConstraint)
+              ]
+      let y =
+            fromRight . TypeDef.intoTypeTree $
+            TypeDef
+              (Node "x" [Node "y" [], Node "z" [Node "y" []]])
+              [("x", FunConstraint), ("y", AnyConstraint), ("z", AnyConstraint)]
+      x `apply'` y `shouldBe`
+        (Left . MergeErr . ShapeErr . LinkedTree.DagMergeErr $ Dag.Cycle)
   describe "validate application" $
     it "Fun :: A -> B -> A; Fun x x" $
     -- Apply the same argument to two different constraints.

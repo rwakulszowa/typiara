@@ -35,6 +35,12 @@ spec = do
     it "simple tree with links" $
       fromTree (Node 'A' [Node 'B' [], Node 'B' []]) `shouldBe`
       (Right $ Dag 'A' [(EdgeSrc 'A' 0, 'B'), (EdgeSrc 'A' 1, 'B')])
+    it "simple tree with links on different levels" $
+      fromTree (Node 'A' [Node 'B' [], Node 'C' [Node 'B' []]]) `shouldBe`
+      (Right $
+       Dag
+         'A'
+         [(EdgeSrc 'A' 0, 'B'), (EdgeSrc 'A' 1, 'C'), (EdgeSrc 'C' 0, 'B')])
     it "cycle" $
       fromTree (Node 'A' [Node 'A' []]) `shouldBe` (Left $ Inconsistency 'A')
     it "inconsistency - leaf vs node" $
@@ -43,6 +49,13 @@ spec = do
     it "inconsistency - differing child" $
       fromTree (Node 'A' [Node 'B' [Node 'C' []], Node 'B' [Node 'D' []]]) `shouldBe`
       (Left $ Inconsistency 'B')
+  describe "detectCycles" $ do
+    it "empty" $ detectCycles (empty 'A') `shouldBe` Nothing
+    it "straight path" $
+      detectCycles (Dag 'A' [(EdgeSrc 'A' 0, 'B')]) `shouldBe` Nothing
+    it "cyclic" $
+      detectCycles (Dag 'A' [(EdgeSrc 'A' 0, 'B'), (EdgeSrc 'B' 0, 'A')]) `shouldBe`
+      (Just "ABA")
   describe "merge" $ do
     let (idSource :: UniqueItemSource Char) = UniqueItemSource.fromList ['a' ..]
     it "empty empty []" $
@@ -109,3 +122,7 @@ spec = do
             , (Right 'C', 'b')
             , (Right 'D', 'c')
             ])
+    it "rejects arguments forming a cycle" $ do
+      let x = fromTree' (Node 'A' [Node 'B' [], Node 'B' []])
+      let y = fromTree' (Node 'C' [Node 'D' [], Node 'E' [Node 'D' []]])
+      merge idSource x [] y `shouldBe` Left Cycle
