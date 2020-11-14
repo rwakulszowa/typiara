@@ -27,8 +27,11 @@ import Typiara.Utils (fromRight)
 spec :: Spec
 spec =
   describe "merge" $
-    -- [Int]
+    -- Int
    do
+    let intDef :: TypeDef (Set SimpleType) =
+          TypeDef (Node "root" []) (Map.fromList [("root", [RigidType Int])])
+    -- [Int]
     let seqDef :: TypeDef (Set SimpleType) =
           TypeDef
             (Node "root" [Node "x" []])
@@ -42,6 +45,12 @@ spec =
     let headDef =
           TypeDef
             (Node "root" [Node "seq" [Node "x" []], Node "x" []])
+            (Map.fromList
+               [("root", [RigidType Fun]), ("seq", [RigidType Seq]), ("x", [])])
+    -- a -> [a]
+    let consDef =
+          TypeDef
+            (Node "root" [Node "x" [], Node "seq" [Node "x" []]])
             (Map.fromList
                [("root", [RigidType Fun]), ("seq", [RigidType Seq]), ("x", [])])
       -- (b -> c) -> (a -> b) -> (a -> c)
@@ -66,16 +75,16 @@ spec =
                , ("b", [])
                , ("c", [])
                ])
-    let (Right [seq, inc, compose, head]) =
+    let (Right [int, seq, inc, compose, head, cons]) =
           mapM
             TypeDef.intoTypeTree
-            ([seqDef, incDef, composeDef, headDef] :: [TypeDef (Set SimpleType)])
+            ([intDef, seqDef, incDef, composeDef, headDef, consDef] :: [TypeDef (Set SimpleType)])
       -- functions with arguments flipped to aid composition.
     let merge' guest path host = TypeTree.mergeAt host path guest
     let apply' arg fun =
           Apply.appliedRet <$> arg `Apply.apply` Apply.applied fun
     describe "merge" $ do
-      it "head . inc" $
+      it "inc . head" $
         (pure compose >>= merge' inc [0] >>= merge' head [1, 0]) `shouldBe`
         Right
           (TypeTree . fromRight $
@@ -106,11 +115,10 @@ spec =
                 , (Link "seq", [RigidType Seq])
                 , (Link "a", [RigidType Int])
                 ]))
-      describe "apply" $
-        it "(head . inc) $ seq" $
-        (pure compose >>= apply' inc >>= apply' head >>= apply' seq) `shouldBe`
-        Right
-          (TypeTree . fromRight $
-           LinkedTree.linkedTree
-             (Node (Link "Root") [])
-             (Map.fromList [(Link "Root", [RigidType Int])]))
+      describe "apply" $ do
+        it "(inc . head) $ seq" $
+          (pure compose >>= apply' inc >>= apply' head >>= apply' seq) `shouldBe`
+          Right int
+        it "(cons . inc) $ int" $
+          (pure compose >>= apply' cons >>= apply' inc >>= apply' int) `shouldBe`
+          Right seq
