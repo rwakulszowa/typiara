@@ -300,6 +300,7 @@ diffMapFromUpdates = Monad.foldM processOne Map.empty
   where
     processOne diffMap (src, dst)
          -- Cannot map the same value twice.
+         -- Identity mappings are assumed to have already been removed.
       | src `Map.member` diffMap = Left $ DuplicateUpdate src
          -- sources are expected to be processed before any item references them as a dst.
       | src `elem` Map.elems diffMap = Left $ OutOfOrderUpdate src
@@ -383,7 +384,10 @@ resolveOverlappingEdges (initialReplacedNode, initialInjectedNode) overlappingEd
       -> (OverlappingEdges id, Updates (EdgeDst id))
     resolve' overlappingEdges updates =
       case popOne overlappingEdges of
-        (Just (x, y), remainingEdges) ->
+        (Just (x, y), remainingEdges)
+          -- Ignore identity mappings. They have no effect anyway.
+          | x == y -> resolve' remainingEdges updates
+          | otherwise ->
           let (updatedEdges, (erasedId, erasedIdsReplacement)) =
                 replaceId x y remainingEdges
            in resolve' updatedEdges ((erasedId, erasedIdsReplacement) : updates)

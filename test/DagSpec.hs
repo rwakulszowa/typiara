@@ -126,3 +126,35 @@ spec = do
       let x = fromTree' (Node 'A' [Node 'B' [], Node 'B' []])
       let y = fromTree' (Node 'C' [Node 'D' [], Node 'E' [Node 'D' []]])
       merge idSource x [] y `shouldBe` Left Cycle
+    it "propagates links across merged branches" $
+      -- `D` and `E` are not linked. `D` has two disjoint children, `E` has two linked children.
+      -- `x` triggers a link between `D` and `E`.
+      -- `G` should get linked to `F` as a result of `D <-> E` link propagation.
+      --
+      -- Reproduces a past issue causing a crash during diff calculation.
+      -- The error was caused by identity mappings, which were rejected in the deduplication phase.
+     do
+      let x = fromTree' (Node 'A' [Node 'B' [], Node 'B' []])
+      let y =
+            fromTree'
+              (Node
+                 'C'
+                 [ Node 'D' [Node 'F' [], Node 'G' []]
+                 , Node 'E' [Node 'F' [], Node 'F' []]
+                 ])
+      merge idSource x [] y `shouldBe`
+        Right
+          ( fromTree'
+              (Node
+                 'a'
+                 [ Node 'b' [Node 'c' [], Node 'c' []]
+                 , Node 'b' [Node 'c' [], Node 'c' []]
+                 ])
+          , [ (Left 'A', 'a')
+            , (Left 'B', 'b')
+            , (Right 'C', 'a')
+            , (Right 'D', 'b')
+            , (Right 'E', 'b')
+            , (Right 'F', 'c')
+            , (Right 'G', 'c')
+            ])
