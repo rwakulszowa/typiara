@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7809b7b77f4e7497cefd76cf2d4689531d949c8382ba2687ec4c8d9be38dc731
+-- hash: b0275307e4a10b02b6dbed7c68116b2dc9502fbf6c7c075d940542e7e44eaa53
 
 name:           typiara
 version:        0.1.0.0
@@ -29,6 +29,7 @@ library
   exposed-modules:
       Typiara.ApplicableConstraint
       Typiara.Apply
+      Typiara.Apply.ApplicationTree
       Typiara.Constraint
       Typiara.Dag
       Typiara.Example.SimpleType
