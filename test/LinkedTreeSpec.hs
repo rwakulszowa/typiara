@@ -192,6 +192,13 @@ spec = do
        fromTree
          (Node (Link "A", 1) [Node (Link "B", 2) [], Node (Link "B", 3) []])) `shouldBe`
       (Left $ ConflictingValues (Link "B") (2, 3))
+  describe "fromTreeImplicit" $ do
+    it "nested, links" $
+      fromTreeImplicit (Node 'x' [Node 'y' [], Node 'y' []]) `shouldBe`
+      Right
+        (linkedTree'
+           (Node (Link "A") [Node (Link "B") [], Node (Link "B") []])
+           [(Link "A", 'x'), (Link "B", 'y')])
   describe "merge" $ do
     it "singleton [] singleton" $ do
       let host = linkedTree' (Node (Link "a") []) [(Link "a", 1)]
@@ -276,8 +283,7 @@ spec = do
                  [Node (Link "b") [], Node (Link "c") [Node (Link "b") []]])
               [(Link "a", ()), (Link "b", ()), (Link "c", ())]
       let offset = []
-      (ro <$> merge host offset guest) `shouldBe`
-        (Left $ DagMergeErr Dag.Cycle)
+      (ro <$> merge host offset guest) `shouldBe` (Left $ DagMergeErr Dag.Cycle)
   describe "decompose" $ do
     it "singleton" $ decompose (singleton 'A') `shouldBe` ('A', [])
     it "single child" $

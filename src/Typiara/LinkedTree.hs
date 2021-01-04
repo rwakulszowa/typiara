@@ -11,6 +11,7 @@ module Typiara.LinkedTree
   , linkedTriple
   , intoTree
   , fromTree
+  , fromTreeImplicit
   , expand
   , FromTreeErr(..)
   , MergeErr(..)
@@ -173,6 +174,19 @@ fromTree tree = do
           case insertIfNew link value acc of
             (Just inserted) -> (Right inserted, link)
             Nothing -> error "Insertion failed"
+
+-- | Same as `fromTree`, except links are generated from values.
+fromTreeImplicit ::
+     (Eq a, Ord a) => Tree a -> Either (FromTreeErr a) (LinkedTree a)
+fromTreeImplicit = fromTree . zipWithLinks
+  where
+    zipWithLinks :: (Eq a, Ord a) => Tree a -> Tree (Link, a)
+    zipWithLinks tree =
+      let uniqueValues = List.nub (Tree.flatten tree)
+          valueToLink =
+            Map.fromList . fromRight $
+            (uniqueValues `UniqueItemSource.zipUnique` Link.uniqueLinkSource)
+       in (\x -> (valueToLink Map.! x, x)) <$> tree
 
 shift :: Path -> LinkedTree a -> Maybe (LinkedTree a)
 shift offset (LinkedTree shape values) = do
