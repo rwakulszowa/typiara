@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 40e2877ea297dec6981af4ba853a7952ea534d80edef708f12c7b192f23e8d8e
+-- hash: a177735bf485d9ae27dd408bb89224f42e0c084576b773d2ff00c8ad1c1442da
 
 name:           typiara
 version:        0.1.0.0
@@ -30,6 +30,8 @@ library
       Typiara.ApplicableConstraint
       Typiara.Apply
       Typiara.Apply.ApplicationTree
+      Typiara.Apply.FullyConstrainedApplicationTree
+      Typiara.Apply.PartiallyConstrainedApplicationTree
       Typiara.Constraint
       Typiara.Dag
       Typiara.Example.SimpleType
@@ -72,6 +74,7 @@ test-suite typiara-test
   main-is: Spec.hs
   other-modules:
       Apply.ApplicationTreeSpec
+      Apply.FullyConstrainedApplicationTreeSpec
       ApplySpec
       DagSpec
       Example.SimpleTypeSpec
