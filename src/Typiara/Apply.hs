@@ -10,6 +10,7 @@ module Typiara.Apply
   , AppliedWithContext(..)
   , ApplyWithContextErr(..)
   , ApplicationContext(..)
+  , minimalApplicationTree
   ) where
 
 import qualified Data.Map.Strict as Map
@@ -110,12 +111,12 @@ apply arg (Applied tt appliedCount) =
 -- Merge with a minimal function application tree, extending its shape and constraints, if need be.
 addFunConstraint tt path =
   mapLeft AddFunConstraintErr $ TypeTree.mergeAt tt path minimalApplicationTree
-        -- Minimal tree representing an function.
-        -- Branches are not linked. After merging with the main tree, its links will propagate.
-        -- Merging with a tree had already been marked a function will not modify it.
-  where
-    minimalApplicationTree =
-      TypeTree.triple funConstraint nilConstraint nilConstraint
+
+-- Minimal tree representing an function.
+-- Branches are not linked. After merging with the main tree, its links will propagate.
+-- Merging with a tree had already been marked a function will not modify it.
+minimalApplicationTree :: (ApplicableConstraint c) => TypeTree c
+minimalApplicationTree = TypeTree.triple funConstraint nilConstraint nilConstraint
 
 data ApplicationContext argId c =
   ApplicationContext
