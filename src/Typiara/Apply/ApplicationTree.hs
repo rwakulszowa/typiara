@@ -1,9 +1,11 @@
 module Typiara.Apply.ApplicationTree
   ( ApplicationTree(..)
+  , intoTree
+  , traverseAccumWithReplacement
   ) where
 
-import Data.Map.Strict as Map
-import Typiara.TypeTree (TypeTree, singleton)
+import Data.Tree (Tree(..))
+import Typiara.MaybeEq
 
 -- | A tree representing curried function application in a type agnostic way.
 -- The structure contains only the shape and node labels. If multiple nodes
@@ -31,3 +33,25 @@ instance Foldable ApplicationTree where
 instance Traversable ApplicationTree where
   traverse f (Unapplied x) = Unapplied <$> f x
   traverse f (Application l r) = Application <$> traverse f l <*> traverse f r
+
+-- | Convert into a regular tree.
+-- Uses `MaybeEq` to avoid linking `Application` nodes.
+intoTree :: ApplicationTree a -> Tree (MaybeEq a)
+intoTree (Unapplied a) = Node (MaybeEq $ Just a) []
+intoTree (Application l r) = Node (MaybeEq Nothing) (map intoTree [l, r])
+
+-- | Traverse the tree, replacing each node with the result of `f`,
+-- accumulating state in the process.
+-- Leaves are processed first, then their parents, along with the results
+-- of processing children.
+-- The result may be a tree of a different shape than the input.
+traverseAccumWithReplacement ::
+     (s -> ApplicationTree a -> (s, ApplicationTree a))
+  -> s
+  -> ApplicationTree a
+  -> (s, ApplicationTree a)
+traverseAccumWithReplacement f s tree@(Unapplied _) = f s tree
+traverseAccumWithReplacement f s (Application l r) =
+  let (s0, newL) = traverseAccumWithReplacement f s l
+      (s1, newR) = traverseAccumWithReplacement f s0 r
+   in f s1 (Application newL newR)

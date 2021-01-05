@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b0275307e4a10b02b6dbed7c68116b2dc9502fbf6c7c075d940542e7e44eaa53
+-- hash: 40e2877ea297dec6981af4ba853a7952ea534d80edef708f12c7b192f23e8d8e
 
 name:           typiara
 version:        0.1.0.0
@@ -71,6 +71,7 @@ test-suite typiara-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Apply.ApplicationTreeSpec
       ApplySpec
       DagSpec
       Example.SimpleTypeSpec
