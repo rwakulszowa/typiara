@@ -1,7 +1,7 @@
 module Typiara.Apply.ApplicationTree
   ( ApplicationTree(..)
   , intoTree
-  , traverseAccumWithReplacement
+  , traverseWithReplacement
   ) where
 
 import Data.Tree (Tree(..))
@@ -41,17 +41,16 @@ intoTree (Unapplied a) = Node (MaybeEq $ Just a) []
 intoTree (Application l r) = Node (MaybeEq Nothing) (map intoTree [l, r])
 
 -- | Traverse the tree, replacing each node with the result of `f`,
--- accumulating state in the process.
+-- handling a monad in the process.
 -- Leaves are processed first, then their parents, along with the results
 -- of processing children.
 -- The result may be a tree of a different shape than the input.
-traverseAccumWithReplacement ::
-     (s -> ApplicationTree a -> (s, ApplicationTree a))
-  -> s
+traverseWithReplacement ::
+   (Monad m) => (ApplicationTree a -> m (ApplicationTree a))
   -> ApplicationTree a
-  -> (s, ApplicationTree a)
-traverseAccumWithReplacement f s tree@(Unapplied _) = f s tree
-traverseAccumWithReplacement f s (Application l r) =
-  let (s0, newL) = traverseAccumWithReplacement f s l
-      (s1, newR) = traverseAccumWithReplacement f s0 r
-   in f s1 (Application newL newR)
+  -> m (ApplicationTree a)
+traverseWithReplacement f tree@(Unapplied _) = f tree
+traverseWithReplacement f (Application l r) = do
+    newL <- traverseWithReplacement f l
+    newR <- traverseWithReplacement f r
+    f (Application newL newR)
