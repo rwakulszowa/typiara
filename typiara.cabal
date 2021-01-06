@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ea9cc81fd9b0bd45f2e0499d0113b5fd9f0776626a7005c9a9a574196f8866ba
+-- hash: edd2b1dc4b089f9f9dc9b0535fac3ec05b37a80c5c0f4c4de89047c41d32f36e
 
 name:           typiara
 version:        0.1.0.0
@@ -77,6 +77,7 @@ test-suite typiara-test
   other-modules:
       Apply.ApplicationTreeSpec
       Apply.FullyConstrainedApplicationTreeSpec
+      Apply.PartiallyConstrainedApplicationTreeSpec
       ApplySpec
       DagSpec
       Example.SimpleTypeSpec
@@ -84,6 +85,7 @@ test-suite typiara-test
       LinkedTreeSpec
       MaybeEqSpec
       TestConstraint
+      TestUtils
       TypeDefSpec
       TypeTreeSpec
       UniqueItemSourceSpec

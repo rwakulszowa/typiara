@@ -7,18 +7,10 @@ module Apply.FullyConstrainedApplicationTreeSpec
 import Data.Either (isLeft)
 import Test.Hspec
 import TestConstraint
+import TestUtils
 import Typiara.Apply.ApplicationTree
 import Typiara.Apply.FullyConstrainedApplicationTree
-import Typiara.TypeTree (TypeTree, mergeAt, singleton, triple)
-import Typiara.Utils (fromRight)
-
-fun :: [TestConstraint] -> TypeTree TestConstraint
-fun [t] = singleton t
-fun [arg, ret] = triple FunConstraint arg ret
-fun (t:ts) =
-  let base = triple FunConstraint t AnyConstraint
-      ret = fun ts
-   in fromRight $ mergeAt base [1] ret
+import Typiara.TypeTree (singleton)
 
 spec :: Spec
 spec = do

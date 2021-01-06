@@ -1,11 +1,14 @@
 module Typiara.Apply.PartiallyConstrainedApplicationTree
   ( PartiallyConstrainedApplicationTree
   , injectConstraints
-  , intoFullyConstrained
+  , reduceConstrainedNodes
   ) where
 
 import Typiara.ApplicableConstraint
-import Typiara.Apply.ApplicationTree (ApplicationTree(..))
+import Typiara.Apply.ApplicationTree
+  ( ApplicationTree(..)
+  , traverseWithReplacement
+  )
 import Typiara.Apply.FullyConstrainedApplicationTree
   ( FullyConstrainedApplicationTree
   , ReduceConstraintsError(..)
@@ -43,6 +46,13 @@ tryReduce = fmap reduceConstraints . intoFullyConstrained
 -- | Reduce nodes that can be reduced, potentially returning merge errors.
 -- Non-constrained branches are left intact.
 reduceConstrainedNodes ::
-     PartiallyConstrainedApplicationTree a c
+     (Show c, ApplicableConstraint c, Ord c)
+  => PartiallyConstrainedApplicationTree a c
   -> Either (ReduceConstraintsError c) (PartiallyConstrainedApplicationTree a c)
-reduceConstrainedNodes = undefined  -- TODO
+reduceConstrainedNodes = traverseWithReplacement reduceOne
+  where
+    reduceOne t =
+      case (tryReduce t) of
+        Nothing -> Right t
+        -- ^ `Nothing`s are not errors. Return the original tree, untouched.
+        (Just result) -> (Unapplied . Right) <$> result
