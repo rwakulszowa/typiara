@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedLists #-}
 
 module UtilsSpec
   ( spec
@@ -48,3 +49,7 @@ spec = do
     it "nested" $
       scanTree sum (Node 1 [Node 2 [], Node 3 []]) `shouldBe`
       Node 6 [Node 2 [], Node 3 []]
+  describe "pop" $ do
+    it "failure" $ pop [('A', 1 :: Int)] 'B' `shouldBe` Nothing
+    it "success" $
+      pop [('A', 1 :: Int), ('B', 2)] 'B' `shouldBe` (Just (2, [('A', 1)]))

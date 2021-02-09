@@ -158,3 +158,29 @@ mapKeysRejectConflicts f =
   sequence . Map.mapKeysWith rejectConflict f . fmap Just
   where
     rejectConflict _ _ = Nothing
+
+pop :: (Ord k) => Map k v -> k -> Maybe (v, Map k v)
+pop m k =
+  case m Map.!? k of
+    Nothing -> Nothing
+    (Just v) -> Just (v, k `Map.delete` m)
+
+popN m ks =
+  foldM
+    (\(m, acc) k -> do
+       (v, m') <- m `pop` k
+       return (m', acc ++ [v]))
+    (m, mempty)
+    ks
+
+-- | Givan a map from k to v and a set of expected ks, turn a map
+-- into a function that never fails to find a value.
+-- The returned function should only be called on values included in `ks`.
+buildLookupF :: (Ord k) => Map k v -> Set k -> Either (NonEmpty k) (k -> v)
+buildLookupF kv keys =
+  let missingKeys =
+        (NonEmpty.nonEmpty . Set.elems)
+          (Set.fromList (Map.keys kv) `Set.difference` keys)
+   in case missingKeys of
+        Nothing -> Right (kv Map.!)
+        (Just mk) -> Left (mk)
