@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: abb31a6e00d1dbe65211865397d735618892890b66a9e50598d2927ae13c9bf6
+-- hash: 1b0a4a0f08d14493a634d8e7e802fd74214daac0aa6a57c87ef8832f38997dd8
 
 name:           typiara
 version:        0.1.0.0
@@ -36,7 +36,9 @@ library
       Typiara.Dag
       Typiara.Example.SimpleType
       Typiara.Infer.Application
+      Typiara.Infer.Expression
       Typiara.Infer.FT
+      Typiara.Infer.SampleTyp
       Typiara.Infer.Typ
       Typiara.Infer.TypeEnv
       Typiara.LeftOrRight
@@ -85,6 +87,7 @@ test-suite typiara-test
       ApplySpec
       DagSpec
       Example.SimpleTypeSpec
+      Infer.ExpressionSpec
       LibSpec
       LinkedTreeSpec
       MaybeEqSpec
