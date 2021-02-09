@@ -1,7 +1,9 @@
 {-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable,
   FlexibleInstances #-}
 
-module Typiara.Infer.FT (FT(..)) where
+module Typiara.Infer.FT
+  ( FT(..)
+  ) where
 
 -- | Function or not-a-function (or an empty type).
 -- Functions are special. All other types are provided by the user, but

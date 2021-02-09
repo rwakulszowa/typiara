@@ -7,18 +7,17 @@ import Data.Bifunctor (bimap, first)
 import Data.Foldable (foldlM, foldrM, toList)
 import Data.List (nub)
 import Data.List.NonEmpty (NonEmpty((:|)))
-import Data.Traversable (mapAccumL)
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
+import Data.Traversable (mapAccumL)
 import qualified Data.Tree as Tree
 
-import qualified Typiara.Utils as Utils
-import Typiara.LeftOrRight (LeftOrRight)
 import Typiara.Infer.FT (FT(..))
 import Typiara.Infer.Typ (Typ(..), UnifyError(..), UnifyResult(..))
-
+import Typiara.LeftOrRight (LeftOrRight)
+import qualified Typiara.Utils as Utils
 
 -- | Type wrapper for identifiers with one special value.
 data RootOrNotRoot a
@@ -43,8 +42,7 @@ refresh ::
   => TypeVarMap t a
   -> (Map.Map a b, TypeVarMap t b)
 refresh t =
-  let mapping =
-        Map.fromList $ (Set.elems (allVars t)) `zip` ([(toEnum 0) ..])
+  let mapping = Map.fromList $ (Set.elems (allVars t)) `zip` ([(toEnum 0) ..])
    in (mapping, fmapTVs (mapping Map.!) t)
 
 -- | Dig all stored type variable names.
@@ -111,8 +109,7 @@ getR t (NotRoot k) = get t k
 -- TODO: investigate how likely it is to leave the instance in and invalid
 -- state after this call (orphans / cycles). Consider cleaning up after the
 -- operation.
-replace ::
-     (Ord v) => (RootOrNotRoot v) -> FT t v -> TypeEnv t v -> TypeEnv t v
+replace :: (Ord v) => (RootOrNotRoot v) -> FT t v -> TypeEnv t v -> TypeEnv t v
 replace k v = TypeEnv . (Map.alter f k) . unTypeEnv
   where
     f Nothing = error "key not found"
@@ -154,10 +151,10 @@ unifyEnv leftIdToMerge (TypeEnv a) (TypeEnv b) =
         case a of
           (Left Root) -> Root
           x -> (NotRoot (mapping Map.! x))
-      in clean <$>
-           (unifyVars
-              (TypeEnv refreshed)
-              (maptv (Left leftIdToMerge), maptv (Right Root)))
+   in clean <$>
+      (unifyVars
+         (TypeEnv refreshed)
+         (maptv (Left leftIdToMerge), maptv (Right Root)))
   where
     annotateMap fk fv m =
       Maybe.fromJust ((fmap (fmap fv)) <$> (Utils.mapKeysRejectConflicts fk m))
@@ -203,9 +200,9 @@ funT (a, tA) (b, tB) =
 
 -- | Same as `funT`, except ids are generated automatically.
 funT' tA tB =
-    let a = toEnum 0
-        b = succ a
-     in funT (a, tA) (b, tB)
+  let a = toEnum 0
+      b = succ a
+   in funT (a, tA) (b, tB)
 
 -- | Traverse the tree, returning n'th return node.
 -- Will crash if `arity < n`.
@@ -233,8 +230,7 @@ pick :: (Foldable t, Ord v) => TypeEnv t v -> RootOrNotRoot v -> TypeEnv t v
 pick base id =
   let r = get' id
    in TypeEnv
-        ((unTypeEnv base `Map.restrictKeys`
-          (Set.fromList (NotRoot <$> (dig r)))) `mappend`
+        ((unTypeEnv base `Map.restrictKeys` (Set.fromList (NotRoot <$> (dig r)))) `mappend`
          (Map.singleton Root r))
   where
     dig t =

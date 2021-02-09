@@ -1,4 +1,8 @@
-module Typiara.Infer.Typ (Typ(..), UnifyResult(..), UnifyError(..)) where
+module Typiara.Infer.Typ
+  ( Typ(..)
+  , UnifyResult(..)
+  , UnifyError(..)
+  ) where
 
 import Typiara.Infer.FT
 
