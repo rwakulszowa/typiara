@@ -1,5 +1,4 @@
-{-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable,
-  FlexibleInstances #-}
+{-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable #-}
 
 module Typiara.Infer.TypeEnv where
 

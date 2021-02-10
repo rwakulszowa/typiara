@@ -13,7 +13,6 @@ module Typiara.TypeTree
   , decompose
   , ShiftErr(..)
   , asTree
-  , arePathsLinked
   ) where
 
 import Data.Function (on)
@@ -77,6 +76,3 @@ decompose = mapSnd (map TypeTree) . LinkedTree.decompose . impl
 
 asTree :: TypeTree c -> LinkedTree c
 asTree (TypeTree impl) = impl
-
-arePathsLinked :: Path -> Path -> TypeTree c -> Either Path Bool
-arePathsLinked p0 p1 = LinkedTree.arePathsLinked p0 p1 . impl
