@@ -52,7 +52,7 @@ reduceConstrainedNodes ::
 reduceConstrainedNodes = traverseWithReplacement reduceOne
   where
     reduceOne t =
-      case (tryReduce t) of
+      case tryReduce t of
         Nothing -> Right t
         -- ^ `Nothing`s are not errors. Return the original tree, untouched.
-        (Just result) -> (Unapplied . Right) <$> result
+        (Just result) -> Unapplied . Right <$> result

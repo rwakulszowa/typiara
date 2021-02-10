@@ -25,7 +25,7 @@ spec =
         takeUnique 3 source `shouldBe` Right [1, 2, 3]
       it "duplicates" $ do
         let source = fromList [1, 2, 1]
-        takeUnique 3 source `shouldBe` (Left $ Duplicate 1)
+        takeUnique 3 source `shouldBe` Left (Duplicate 1)
       it "out of bounds" $ do
         let source = fromList [1, 2]
         takeUnique 3 source `shouldBe` Left SourceDepleted

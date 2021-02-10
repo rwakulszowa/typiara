@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable #-}
+{-# LANGUAGE DeriveTraversable #-}
 
 module Typiara.Infer.TypeEnv where
 
@@ -41,14 +41,14 @@ refresh ::
   => TypeVarMap t a
   -> (Map.Map a b, TypeVarMap t b)
 refresh t =
-  let mapping = Map.fromList $ (Set.elems (allVars t)) `zip` ([(toEnum 0) ..])
+  let mapping = Map.fromList $ Set.elems (allVars t) `zip` [(toEnum 0) ..]
    in (mapping, fmapTVs (mapping Map.!) t)
 
 -- | Dig all stored type variable names.
 allVars :: (Ord a, Foldable t) => TypeVarMap t a -> Set.Set a
-allVars (tvs) =
-  ((Set.fromList . concatMap toList . Map.keys) tvs) `mappend`
-  ((Set.fromList . concatMap toList . Map.elems) tvs)
+allVars tvs =
+  (Set.fromList . concatMap toList . Map.keys) tvs `mappend`
+  (Set.fromList . concatMap toList . Map.elems) tvs
 
 -- | Note on pseudo instances.
 -- The type doesn't satisfy `fmap` because it uses `a` twice in its signature.
@@ -60,7 +60,7 @@ allVars (tvs) =
 -- `f` *must not* cause conflicts.
 fmapTVs ::
      (Functor t, Ord a, Ord b) => (a -> b) -> TypeVarMap t a -> TypeVarMap t b
-fmapTVs f tvs = (mapValue <$> (mapKeysRejectConflicts mapKey tvs))
+fmapTVs f tvs = mapValue <$> mapKeysRejectConflicts mapKey tvs
   where
     mapKey = fmap f
     mapValue = fmap f
@@ -93,12 +93,12 @@ singleton t = TypeEnv (Map.singleton Root t)
 
 -- | Get the root item.
 -- Crashes on failure. A root item should always exist.
-getRoot :: (Ord v) => TypeEnv t v -> (FT t v)
-getRoot t = (unTypeEnv t) Map.! Root
+getRoot :: (Ord v) => TypeEnv t v -> FT t v
+getRoot t = unTypeEnv t Map.! Root
 
 -- | Get a non-root item.
 get :: (Ord v) => TypeEnv t v -> v -> Maybe (FT t v)
-get t k = (unTypeEnv t) Map.!? (NotRoot k)
+get t k = unTypeEnv t Map.!? NotRoot k
 
 getR t Root = Just (getRoot t)
 getR t (NotRoot k) = get t k
@@ -108,8 +108,8 @@ getR t (NotRoot k) = get t k
 -- TODO: investigate how likely it is to leave the instance in and invalid
 -- state after this call (orphans / cycles). Consider cleaning up after the
 -- operation.
-replace :: (Ord v) => (RootOrNotRoot v) -> FT t v -> TypeEnv t v -> TypeEnv t v
-replace k v = TypeEnv . (Map.alter f k) . unTypeEnv
+replace :: (Ord v) => RootOrNotRoot v -> FT t v -> TypeEnv t v -> TypeEnv t v
+replace k v = TypeEnv . Map.alter f k . unTypeEnv
   where
     f Nothing = error "key not found"
     f (Just _) = Just v
@@ -141,22 +141,21 @@ unifyEnv leftIdToMerge (TypeEnv a) (TypeEnv b) =
             -- Right root becomes a regular item. At this point it is still
             -- annotated with `Right Root`, but that will disappear after
             -- refreshing ids.
-         in ((Map.mapKeys NotRoot nonRoots) `mappend`
-             (Map.singleton Root leftRoot))
+         in (Map.mapKeys NotRoot nonRoots `mappend` Map.singleton Root leftRoot)
       (mapping, refreshed) = refresh mergedTVs
       -- `Left Root` was popped before refreshing, therefore it won't be found
       -- in `mapping`.
       maptv a =
         case a of
           (Left Root) -> Root
-          x -> (NotRoot (mapping Map.! x))
+          x -> NotRoot (mapping Map.! x)
    in clean <$>
-      (unifyVars
-         (TypeEnv refreshed)
-         (maptv (Left leftIdToMerge), maptv (Right Root)))
+      unifyVars
+        (TypeEnv refreshed)
+        (maptv (Left leftIdToMerge), maptv (Right Root))
   where
     annotateMap fk fv m =
-      Maybe.fromJust ((fmap (fmap fv)) <$> (Utils.mapKeysRejectConflicts fk m))
+      Maybe.fromJust (fmap (fmap fv) <$> Utils.mapKeysRejectConflicts fk m)
     -- ^ Key mapping won't crash as long as the function is an annotation (adds
     -- new data without dropping any).
 
@@ -175,13 +174,13 @@ unifyVars ti (x, y) = do
     (TypeVarsToUnify ts) -> foldUnify ti (bimap NotRoot NotRoot <$> ts)
   where
     find t k = Utils.maybeError (KeyNotFound k) (t `getR` k)
-    foldUnify ti pairs = foldlM unifyVars (ti) pairs
+    foldUnify ti pairs = foldlM unifyVars ti pairs
 
 -- | `TypeEnv` representing a chain of functions.
 buildFunEnv :: (Ord v, Enum v) => Int -> TypeEnv t v
 buildFunEnv arity =
-  let (t:ts) = generateFunctionTypes (arity) (toEnum 0)
-   in TypeEnv (Map.fromList ([(Root, snd t)] ++ (first NotRoot <$> ts)))
+  let (t:ts) = generateFunctionTypes arity (toEnum 0)
+   in TypeEnv (Map.fromList ((Root, snd t) : (first NotRoot <$> ts)))
   where
     generateFunctionTypes 0 v = [(v, Nil)]
     -- ^ The last return value is a `Nil`.
@@ -190,7 +189,7 @@ buildFunEnv arity =
           vRet = succ vArg
           node = (v, F vArg vRet)
           arg = (vArg, Nil)
-       in node : arg : (generateFunctionTypes (remaining - 1) vRet)
+       in node : arg : generateFunctionTypes (remaining - 1) vRet
 
 -- | Build a function `tA -> tB`, where the argument is stored under `a` and
 -- the result under `b`.
@@ -208,7 +207,7 @@ funT' tA tB =
 nthFunNode :: (Ord v) => TypeEnv t v -> Int -> FT t v
 nthFunNode t n = go (getRoot t) n
   where
-    get' = Maybe.fromJust . (get t)
+    get' = Maybe.fromJust . get t
     go t 0 = t
     go (F _ ret) n = go (get' ret) (n - 1)
 
@@ -229,8 +228,8 @@ pick :: (Foldable t, Ord v) => TypeEnv t v -> RootOrNotRoot v -> TypeEnv t v
 pick base id =
   let r = get' id
    in TypeEnv
-        ((unTypeEnv base `Map.restrictKeys` (Set.fromList (NotRoot <$> (dig r)))) `mappend`
-         (Map.singleton Root r))
+        ((unTypeEnv base `Map.restrictKeys` Set.fromList (NotRoot <$> dig r)) `mappend`
+         Map.singleton Root r)
   where
     dig t =
       let directChildren = nub (toList t)

@@ -38,9 +38,9 @@ inferApplication ::
 inferApplication (x NonEmpty.:| []) = Right x
 inferApplication (fun :| args) = do
   let arity = length args
-  (appEnv) <- (unifyEnv Root fun (buildFunEnv arity))
+  appEnv <- unifyEnv Root fun (buildFunEnv arity)
   -- ^ Application shape allows us to deduce required arity for the function.
-  cleanEnv <- pure (clean appEnv)
+  let cleanEnv = clean appEnv
   (result, _) <-
     foldlM
       (\(t, n) arg -> do

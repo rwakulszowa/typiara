@@ -1,5 +1,4 @@
-{-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable,
-  FlexibleInstances #-}
+{-# LANGUAGE DeriveTraversable, FlexibleInstances #-}
 
 module Typiara.Infer.FT
   ( FT(..)

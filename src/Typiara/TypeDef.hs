@@ -1,5 +1,4 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module Typiara.TypeDef

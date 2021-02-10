@@ -191,7 +191,7 @@ spec = do
       (ro <$>
        fromTree
          (Node (Link "A", 1) [Node (Link "B", 2) [], Node (Link "B", 3) []])) `shouldBe`
-      (Left $ ConflictingValues (Link "B") (2, 3))
+      Left (ConflictingValues (Link "B") (2, 3))
   describe "fromTreeImplicit" $ do
     it "nested, links" $
       fromTreeImplicit (Node 'x' [Node 'y' [], Node 'y' []]) `shouldBe`
@@ -270,7 +270,7 @@ spec = do
       let guest = linkedTree' (Node (Link "a") []) [(Link "a", 2)]
       let offset = [0, 0]
       (ro <$> merge host offset guest) `shouldBe`
-        (Left $ DagMergeErr Dag.PathNotFound)
+        Left (DagMergeErr Dag.PathNotFound)
     it "incompatible shapes - reject a cycle" $ do
       let host =
             linkedTree'
@@ -283,7 +283,7 @@ spec = do
                  [Node (Link "b") [], Node (Link "c") [Node (Link "b") []]])
               [(Link "a", ()), (Link "b", ()), (Link "c", ())]
       let offset = []
-      (ro <$> merge host offset guest) `shouldBe` (Left $ DagMergeErr Dag.Cycle)
+      (ro <$> merge host offset guest) `shouldBe` Left (DagMergeErr Dag.Cycle)
   describe "decompose" $ do
     it "singleton" $ decompose (singleton 'A') `shouldBe` ('A', [])
     it "single child" $

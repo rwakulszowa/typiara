@@ -60,7 +60,7 @@ spec = do
     it "hof: any a" $
       appliedTree <$>
       tAny `apply'` tA `shouldBe`
-      (Right $ TypeTree.triple FunConstraint (ConstraintId "A") AnyConstraint)
+      Right (TypeTree.triple FunConstraint (ConstraintId "A") AnyConstraint)
     it "incompatible pair introducing a cycle" $
       -- Validates that invalid arguments are rejected.
       -- The scenario reproduced below used to cause an infinite loop during DAG reconstruction

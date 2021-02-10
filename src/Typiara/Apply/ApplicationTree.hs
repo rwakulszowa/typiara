@@ -46,11 +46,12 @@ intoTree (Application l r) = Node (MaybeEq Nothing) (map intoTree [l, r])
 -- of processing children.
 -- The result may be a tree of a different shape than the input.
 traverseWithReplacement ::
-   (Monad m) => (ApplicationTree a -> m (ApplicationTree a))
+     (Monad m)
+  => (ApplicationTree a -> m (ApplicationTree a))
   -> ApplicationTree a
   -> m (ApplicationTree a)
 traverseWithReplacement f tree@(Unapplied _) = f tree
 traverseWithReplacement f (Application l r) = do
-    newL <- traverseWithReplacement f l
-    newR <- traverseWithReplacement f r
-    f (Application newL newR)
+  newL <- traverseWithReplacement f l
+  newR <- traverseWithReplacement f r
+  f (Application newL newR)

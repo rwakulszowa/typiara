@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable #-}
+{-# LANGUAGE DeriveTraversable #-}
 
 module Typiara.Infer.SampleTyp
   ( SampleTyp(..)
@@ -14,7 +14,7 @@ data SampleTyp a
   | Num
   deriving (Eq, Show, Ord, Functor, Foldable, Traversable)
 
-instance Typ (SampleTyp) where
+instance Typ SampleTyp where
   unify Nil a = Right (Unified a)
   unify a Nil = unify Nil a
   unify (T (Seq a)) (T (Seq b)) = Right (TypeVarsToUnify [(a, b)])

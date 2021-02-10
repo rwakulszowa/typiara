@@ -21,7 +21,7 @@ spec = do
       let fun t = do
             tell (1 :: Sum Int)
             return t
-      (runWriter $ traverseWithReplacement fun tree) `shouldBe` (tree, 5)
+      runWriter (traverseWithReplacement fun tree) `shouldBe` (tree, 5)
     it "compress small subtrees" $
         -- If a sum of tree values is small, return a single node with the values
         -- added.
@@ -37,5 +37,5 @@ spec = do
                 tell [sum t]
                 return $ Unapplied (sum t)
               else return t
-      (runWriter $ traverseWithReplacement fun tree) `shouldBe`
+      runWriter (traverseWithReplacement fun tree) `shouldBe`
         (Application (Unapplied 2) (Unapplied 3), [1, 1, 2, 1, 2, 3])

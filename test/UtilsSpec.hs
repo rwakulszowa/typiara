@@ -52,4 +52,4 @@ spec = do
   describe "pop" $ do
     it "failure" $ pop [('A', 1 :: Int)] 'B' `shouldBe` Nothing
     it "success" $
-      pop [('A', 1 :: Int), ('B', 2)] 'B' `shouldBe` (Just (2, [('A', 1)]))
+      pop [('A', 1 :: Int), ('B', 2)] 'B' `shouldBe` Just (2, [('A', 1)])

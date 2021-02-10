@@ -27,35 +27,34 @@ fromTree' = fromRight . fromTree
 spec :: Spec
 spec = do
   describe "fromTree" $ do
-    it "singleton" $
-      fromTree (Node 'A' []) `shouldBe` (Right $ Dag 'A' Map.empty)
+    it "singleton" $ fromTree (Node 'A' []) `shouldBe` Right (Dag 'A' Map.empty)
     it "simple tree" $
       fromTree (Node 'A' [Node 'B' [], Node 'C' []]) `shouldBe`
-      (Right $ Dag 'A' [(EdgeSrc 'A' 0, 'B'), (EdgeSrc 'A' 1, 'C')])
+      Right (Dag 'A' [(EdgeSrc 'A' 0, 'B'), (EdgeSrc 'A' 1, 'C')])
     it "simple tree with links" $
       fromTree (Node 'A' [Node 'B' [], Node 'B' []]) `shouldBe`
-      (Right $ Dag 'A' [(EdgeSrc 'A' 0, 'B'), (EdgeSrc 'A' 1, 'B')])
+      Right (Dag 'A' [(EdgeSrc 'A' 0, 'B'), (EdgeSrc 'A' 1, 'B')])
     it "simple tree with links on different levels" $
       fromTree (Node 'A' [Node 'B' [], Node 'C' [Node 'B' []]]) `shouldBe`
-      (Right $
-       Dag
-         'A'
-         [(EdgeSrc 'A' 0, 'B'), (EdgeSrc 'A' 1, 'C'), (EdgeSrc 'C' 0, 'B')])
+      Right
+        (Dag
+           'A'
+           [(EdgeSrc 'A' 0, 'B'), (EdgeSrc 'A' 1, 'C'), (EdgeSrc 'C' 0, 'B')])
     it "cycle" $
-      fromTree (Node 'A' [Node 'A' []]) `shouldBe` (Left $ Inconsistency 'A')
+      fromTree (Node 'A' [Node 'A' []]) `shouldBe` Left (Inconsistency 'A')
     it "inconsistency - leaf vs node" $
       fromTree (Node 'A' [Node 'B' [], Node 'B' [Node 'C' []]]) `shouldBe`
-      (Left $ Inconsistency 'B')
+      Left (Inconsistency 'B')
     it "inconsistency - differing child" $
       fromTree (Node 'A' [Node 'B' [Node 'C' []], Node 'B' [Node 'D' []]]) `shouldBe`
-      (Left $ Inconsistency 'B')
+      Left (Inconsistency 'B')
   describe "detectCycles" $ do
     it "empty" $ detectCycles (empty 'A') `shouldBe` Nothing
     it "straight path" $
       detectCycles (Dag 'A' [(EdgeSrc 'A' 0, 'B')]) `shouldBe` Nothing
     it "cyclic" $
       detectCycles (Dag 'A' [(EdgeSrc 'A' 0, 'B'), (EdgeSrc 'B' 0, 'A')]) `shouldBe`
-      (Just "ABA")
+      Just "ABA"
   describe "merge" $ do
     let (idSource :: UniqueItemSource Char) = UniqueItemSource.fromList ['a' ..]
     it "empty empty []" $

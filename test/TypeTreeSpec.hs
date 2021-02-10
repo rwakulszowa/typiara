@@ -30,7 +30,7 @@ spec = do
   describe "constructors" $
     it "singleton" $
     singleton (ConstraintId "A") `shouldBe`
-    (TypeTree $ linkedTree' (Node (Link "a") []) [(Link "a", ConstraintId "A")])
+    TypeTree (linkedTree' (Node (Link "a") []) [(Link "a", ConstraintId "A")])
   describe "mergeAt" $ do
     describe "nil offset" $ do
       it "singleton singleton" $ do
@@ -67,18 +67,18 @@ spec = do
                 , (Link "c", ConstraintId "C")
                 ]
         mergeAt x [] y `shouldBe`
-          (Right $
-           TypeTree $
-           linkedTree'
-             (Node
-                (Link "a")
-                [ Node (Link "b") [Node (Link "c") []]
-                , Node (Link "b") [Node (Link "c") []]
-                ])
-             [ (Link "a", ConstraintId "A")
-             , (Link "b", ConstraintId "B")
-             , (Link "c", ConstraintId "C")
-             ])
+          Right
+            (TypeTree $
+             linkedTree'
+               (Node
+                  (Link "a")
+                  [ Node (Link "b") [Node (Link "c") []]
+                  , Node (Link "b") [Node (Link "c") []]
+                  ])
+               [ (Link "a", ConstraintId "A")
+               , (Link "b", ConstraintId "B")
+               , (Link "c", ConstraintId "C")
+               ])
     describe "[0] offset" $ do
       it "shifted exact match" $ do
         let x =
@@ -105,17 +105,17 @@ spec = do
                 (Node (Link "b") [Node (Link "d") []])
                 [(Link "b", ConstraintId "B"), (Link "d", ConstraintId "D")]
         mergeAt x [0] y `shouldBe`
-          (Right $
-           TypeTree $
-           linkedTree'
-             (Node
-                (Link "a")
-                [Node (Link "b") [Node (Link "d") []], Node (Link "c") []])
-             [ (Link "a", ConstraintId "A")
-             , (Link "b", ConstraintId "B")
-             , (Link "c", ConstraintId "C")
-             , (Link "d", ConstraintId "D")
-             ])
+          Right
+            (TypeTree $
+             linkedTree'
+               (Node
+                  (Link "a")
+                  [Node (Link "b") [Node (Link "d") []], Node (Link "c") []])
+               [ (Link "a", ConstraintId "A")
+               , (Link "b", ConstraintId "B")
+               , (Link "c", ConstraintId "C")
+               , (Link "d", ConstraintId "D")
+               ])
       it "with links" $ do
         let x =
               TypeTree $
@@ -135,9 +135,9 @@ spec = do
               [(Link "a", ConstraintId "A"), (Link "b", ConstraintId "B")]
       tree `shift`
         [0] `shouldBe`
-        (Right $
-         TypeTree $
-         linkedTree' (Node (Link "b") []) [(Link "b", ConstraintId "B")])
+        Right
+          (TypeTree $
+           linkedTree' (Node (Link "b") []) [(Link "b", ConstraintId "B")])
   describe "asTree" $
     it "singleton" $ do
       let tree = linkedTree' (Node (Link "a") []) [(Link "a", ConstraintId "A")]

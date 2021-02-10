@@ -80,7 +80,7 @@ inferExpression types (Expression args application) = do
   (retT, inferredRefTs) <-
     first UnifyEnvError (inferRefApplication getRefT application)
   let getInferredRefT k =
-        Maybe.fromMaybe (singleton Nil) (inferredRefTs Map.!? (Left k))
+        Maybe.fromMaybe (singleton Nil) (inferredRefTs Map.!? Left k)
   first RebuildError (rebuildExpr (getInferredRefT <$> args) retT)
 
 inferRefApplication getRefT app@(funRef :| argRefs) = do
@@ -98,8 +98,8 @@ inferRefApplication getRefT app@(funRef :| argRefs) = do
 rebuildExpr args ret = foldrM f ret args
   where
     f arg ret =
-      (pure (funT (argV, Nil) (retV, Nil)) >>= merge' argV arg >>=
-       merge' retV ret)
+      pure (funT (argV, Nil) (retV, Nil)) >>= merge' argV arg >>=
+      merge' retV ret
     argV = toEnum 0
     retV = succ argV
     merge' v t baseT = unifyEnv (NotRoot v) baseT t

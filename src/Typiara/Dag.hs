@@ -84,11 +84,11 @@ detectCycles dag@(Dag rootId edges) =
           -- The top level function is responsible for inverting the functor, turning `Left` into `Just`.
       | nodeId `elem` pathSoFar = Left (nodeId : pathSoFar)
       | otherwise =
-        const () <$>
-        (sequence $
-         [ go (nodeId : pathSoFar) child dag
-         | child <- fromJust $ children nodeId dag
-         ])
+        () <$
+        sequence
+          ([ go (nodeId : pathSoFar) child dag
+           | child <- fromJust $ children nodeId dag
+           ])
 
 -- Get ids of nodes reachable from `node`.
 -- `Nothing` if lookup fails. Only possible if dag is invalid.
@@ -266,7 +266,7 @@ merge' left offset right =
         Nothing -> error "Root is missing"
     rejectCycles (dag, diff) =
       case detectCycles dag of
-        (Just _) -> Left $ Cycle
+        (Just _) -> Left Cycle
         Nothing -> Right (dag, diff)
 
 -- Remove duplicate edges by merging duplicate `dst` nodes.
@@ -388,8 +388,10 @@ resolveOverlappingEdges (initialReplacedNode, initialInjectedNode) overlappingEd
           -- Ignore identity mappings. They have no effect anyway.
           | x == y -> resolve' remainingEdges updates
           | otherwise ->
-          let (updatedEdges, (erasedId, erasedIdsReplacement)) =
-                replaceId x y remainingEdges
-           in resolve' updatedEdges ((erasedId, erasedIdsReplacement) : updates)
+            let (updatedEdges, (erasedId, erasedIdsReplacement)) =
+                  replaceId x y remainingEdges
+             in resolve'
+                  updatedEdges
+                  ((erasedId, erasedIdsReplacement) : updates)
         (Nothing, overlappingEdgesWithNoDuplicates) ->
           (overlappingEdgesWithNoDuplicates, updates)

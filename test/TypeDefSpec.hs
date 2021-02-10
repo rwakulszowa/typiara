@@ -36,14 +36,14 @@ spec = do
            , ("0", ConstraintId "C1")
            , ("0-0", ConstraintId "C2")
            ]) `shouldBe`
-      (Right $
-       TypeTree
-         (linkedTree'
-            (Node (Link "root") [Node (Link "0") [Node (Link "0-0") []]])
-            [ (Link "root", ConstraintId "C0")
-            , (Link "0", ConstraintId "C1")
-            , (Link "0-0", ConstraintId "C2")
-            ]))
+      Right
+        (TypeTree
+           (linkedTree'
+              (Node (Link "root") [Node (Link "0") [Node (Link "0-0") []]])
+              [ (Link "root", ConstraintId "C0")
+              , (Link "0", ConstraintId "C1")
+              , (Link "0-0", ConstraintId "C2")
+              ]))
     it "wide, flat" $
       intoTypeTree
         (TypeDef
@@ -52,14 +52,14 @@ spec = do
            , ("0", ConstraintId "C1")
            , ("1", ConstraintId "C2")
            ]) `shouldBe`
-      (Right $
-       TypeTree
-         (linkedTree'
-            (Node (Link "root") [Node (Link "0") [], Node (Link "1") []])
-            [ (Link "root", ConstraintId "C0")
-            , (Link "0", ConstraintId "C1")
-            , (Link "1", ConstraintId "C2")
-            ]))
+      Right
+        (TypeTree
+           (linkedTree'
+              (Node (Link "root") [Node (Link "0") [], Node (Link "1") []])
+              [ (Link "root", ConstraintId "C0")
+              , (Link "0", ConstraintId "C1")
+              , (Link "1", ConstraintId "C2")
+              ]))
   describe "fromTypeTree" $ do
     it "singleton" $
       fromTypeTree

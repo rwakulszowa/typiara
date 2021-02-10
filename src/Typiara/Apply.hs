@@ -112,4 +112,5 @@ addFunConstraint tt path =
 -- Branches are not linked. After merging with the main tree, its links will propagate.
 -- Merging with a tree had already been marked a function will not modify it.
 minimalApplicationTree :: (ApplicableConstraint c) => TypeTree c
-minimalApplicationTree = TypeTree.triple funConstraint nilConstraint nilConstraint
+minimalApplicationTree =
+  TypeTree.triple funConstraint nilConstraint nilConstraint

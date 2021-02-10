@@ -9,12 +9,11 @@ import Data.Traversable (mapAccumL)
 -- does not allow ordering.
 newtype MaybeEq a =
   MaybeEq (Maybe a)
-  deriving Show
+  deriving (Show)
 
 instance Eq a => Eq (MaybeEq a) where
   (==) (MaybeEq Nothing) (MaybeEq Nothing) = False
   (==) (MaybeEq x) (MaybeEq y) = x == y
-
 
 -- | `MaybeEq Nothing` values represent unique elements that should never
 -- be considered equal. However, the type doesn't impment `Ord`.
@@ -23,6 +22,7 @@ instance Eq a => Eq (MaybeEq a) where
 -- NOTE: may silently overflow.
 fillMaybeEq :: (Traversable t) => t (MaybeEq a) -> t (Either Int a)
 fillMaybeEq = snd . mapAccumL fillOne 0
-    where fillOne :: Int -> (MaybeEq a) -> (Int, (Either Int a))
-          fillOne state (MaybeEq (Just a)) = (state, Right a)
-          fillOne state (MaybeEq Nothing) = (succ state, Left state)
+  where
+    fillOne :: Int -> MaybeEq a -> (Int, Either Int a)
+    fillOne state (MaybeEq (Just a)) = (state, Right a)
+    fillOne state (MaybeEq Nothing) = (succ state, Left state)

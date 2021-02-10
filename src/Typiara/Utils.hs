@@ -165,13 +165,12 @@ pop m k =
     Nothing -> Nothing
     (Just v) -> Just (v, k `Map.delete` m)
 
-popN m ks =
+popN m =
   foldM
     (\(m, acc) k -> do
        (v, m') <- m `pop` k
        return (m', acc ++ [v]))
     (m, mempty)
-    ks
 
 -- | Givan a map from k to v and a set of expected ks, turn a map
 -- into a function that never fails to find a value.
@@ -183,4 +182,4 @@ buildLookupF kv keys =
           (Set.fromList (Map.keys kv) `Set.difference` keys)
    in case missingKeys of
         Nothing -> Right (kv Map.!)
-        (Just mk) -> Left (mk)
+        (Just mk) -> Left mk
