@@ -4,6 +4,7 @@
 module Typiara.TypeDef
   ( LinkId
   , TypeDef(..)
+  , singleton
   , intoTypeTree
   , fromTypeTree
   ) where
@@ -51,6 +52,8 @@ data TypeDef constraint =
 -- To derive `Ord` on `TypeDef`.
 instance Ord (Tree LinkId) where
   compare = compare1
+
+singleton = fromTypeTree . TypeTree.singleton
 
 intoLinkedTree ::
      (Show c, Eq c, Constraint c, Ord c)
