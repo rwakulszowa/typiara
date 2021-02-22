@@ -71,3 +71,49 @@ spec = do
              , (NotRoot 5, Nil)
              , (NotRoot 6, Nil)
              ])
+    it "(Seq a -> a) | (Seq Num)" $ do
+      let ts =
+            [ ( ref "f"
+              , TypeEnv
+                  [(Root, F 0 1), (NotRoot 0, T (Seq 1)), (NotRoot 1, Nil)])
+            , (ref "a", TypeEnv [(Root, T (Seq 0)), (NotRoot 0, T Num)])
+            ]
+      let expr = Expression {args = [], application = ref "f" :| [ref "a"]}
+      inferExpression ts expr `shouldBe` Right (singleton' (T Num))
+    it "((a -> b) -> (b -> c) -> (a -> c)) | (Num -> Bool) | (Bool -> Str)" $
+      -- TODO: clean up manual `toEnum` calls below after implementing custom `Eq`.
+     do
+      let ts =
+            [ ( ref "f"
+              , TypeEnv
+                  [ (Root, F 'F' 'G')
+                  , (NotRoot 'F', F 'a' 'b')
+                  , (NotRoot 'G', F 'H' 'I')
+                  , (NotRoot 'H', F 'b' 'c')
+                  , (NotRoot 'I', F 'a' 'c')
+                  , (NotRoot 'a', Nil)
+                  , (NotRoot 'b', Nil)
+                  , (NotRoot 'c', Nil)
+                  ])
+            , ( ref "g"
+              , TypeEnv
+                  [ (Root, F 'x' 'y')
+                  , (NotRoot 'x', T Num)
+                  , (NotRoot 'y', T Bool)
+                  ])
+            , ( ref "h"
+              , TypeEnv
+                  [ (Root, F 'x' 'y')
+                  , (NotRoot 'x', T Bool)
+                  , (NotRoot 'y', T Str)
+                  ])
+            ]
+      let expr =
+            Expression {args = [], application = ref "f" :| [ref "g", ref "h"]}
+      inferExpression ts expr `shouldBe`
+        Right
+          (TypeEnv
+             [ (Root, F (toEnum 4) (toEnum 6))
+             , (NotRoot (toEnum 4), T Num)
+             , (NotRoot (toEnum 6), T Str)
+             ])

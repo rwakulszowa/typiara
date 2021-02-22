@@ -82,6 +82,8 @@ newtype TypeEnv t v =
     }
   deriving (Eq, Show, Ord)
 
+-- TODO: custom `Eq` implementation, converting the container into a tree and refreshing topologically.
+-- A conversion to `Tree` would be useful for cycle detection as well.
 data UnifyEnvError t v
   = KeyNotFound (RootOrNotRoot v)
   | UnifyError (UnifyError t v)
