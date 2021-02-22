@@ -12,6 +12,7 @@ data SampleTyp a
   = Seq a
   | Bool
   | Num
+  | Str
   deriving (Eq, Show, Ord, Functor, Foldable, Traversable)
 
 instance Typ SampleTyp where
