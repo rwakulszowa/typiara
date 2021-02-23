@@ -16,6 +16,29 @@ fixT = id
 
 spec :: Spec
 spec = do
+  describe "Eq" $ do
+    it "same" $ do
+      let te =
+            TypeEnv (fixT [(Root, F 0 1), (NotRoot 0, T Num), (NotRoot 1, Nil)])
+      te == te `shouldBe` True
+    it "different ids, same content" $ do
+      let x =
+            TypeEnv (fixT [(Root, F 0 1), (NotRoot 0, T Num), (NotRoot 1, Nil)])
+      let y =
+            TypeEnv (fixT [(Root, F 1 2), (NotRoot 1, T Num), (NotRoot 2, Nil)])
+      x `shouldBe` y
+    it "different shape" $ do
+      let x =
+            TypeEnv
+              (fixT [(Root, F 0 1), (NotRoot 0, T Num), (NotRoot 1, T Num)])
+      let y = TypeEnv (fixT [(Root, Nil)])
+      x == y `shouldBe` False
+    it "different links, same shape" $ do
+      let x =
+            TypeEnv
+              (fixT [(Root, F 0 1), (NotRoot 0, T Num), (NotRoot 1, T Num)])
+      let y = TypeEnv (fixT [(Root, F 0 0), (NotRoot 0, T Num)])
+      x == y `shouldBe` False
   describe "findCycles" $ do
     it "singleton" $ do
       let tv = fixT [(Root, Nil)]

@@ -183,3 +183,17 @@ buildLookupF kv keys =
    in case missingKeys of
         Nothing -> Right (kv Map.!)
         (Just mk) -> Left mk
+
+-- | Replace old values with a fresh set.
+-- New items are picked in topological order.
+refresh :: (Traversable t, Ord a) => [b] -> t a -> (Map a b, t b)
+refresh bs t =
+  let ((diff, _), t') = mapAccumL getOrTake (Map.empty, bs) t
+   in (diff, t')
+  where
+    getOrTake (seen, bs) a =
+      case a `Map.lookup` seen of
+        (Just b) -> ((seen, bs), b)
+        Nothing ->
+          let (b:bs') = bs
+           in ((Map.insert a b seen, bs'), b)

@@ -2,9 +2,11 @@
 
 module Typiara.TypeEnv where
 
-import Data.Bifunctor (bimap, first)
+import Control.Monad.Zip (munzip, mzip)
+import Data.Bifunctor (bimap, first, second)
 import Data.Data (Data, Typeable)
 import Data.Foldable (foldlM, foldrM, toList)
+import Data.Function (on)
 import Data.List (nub)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.List.NonEmpty as NonEmpty
@@ -125,7 +127,7 @@ newtype TypeEnv t v =
   TypeEnv
     { unTypeEnv :: TypeVarMap t v
     }
-  deriving (Eq, Show, Ord)
+  deriving (Show, Ord)
 
 shape ::
      (Ord v, Foldable t, Tagged (t v))
@@ -137,8 +139,11 @@ shape te = Tree.unfoldTree f Root
       let n = Maybe.fromJust (getR te v)
        in ((v, tag n), NotRoot <$> toList n)
 
--- TODO: custom `Eq` implementation, converting the container into a tree and refreshing topologically.
--- A conversion to `Tree` would be useful for cycle detection as well.
+instance (Ord v, Foldable t, Tagged (t v)) => Eq (TypeEnv t v) where
+  (==) = (==) `on` refreshVs . shape
+    where
+      refreshVs = uncurry mzip . first (snd . Utils.refresh [0 ..]) . munzip
+
 data UnifyEnvError t v
   = KeyNotFound (RootOrNotRoot v)
   | UnifyError (UnifyError t v)
