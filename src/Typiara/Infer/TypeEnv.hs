@@ -13,6 +13,7 @@ import qualified Data.Set as Set
 import Data.Traversable (mapAccumL)
 import qualified Data.Tree as Tree
 
+import Typiara.Fix
 import Typiara.Infer.FT (FT(..))
 import Typiara.Infer.Typ (Typ(..), UnifyError(..), UnifyResult(..))
 import Typiara.LeftOrRight (LeftOrRight)
@@ -33,6 +34,24 @@ data RootOrNotRoot a
 -- TLDR: Raw type variable storage. If doing unsafe stuff, fetch raw data,
 -- do stuff and wrap it with `TypeEnv` when done.
 type TypeVarMap t v = Map.Map (RootOrNotRoot v) (FT t v)
+
+-- | Rebuild a tree from the map.
+-- NOTE: not really used anywhere (yet?).
+--
+-- This fuction builds a directed graph from the map representation.
+-- Cycle detection can be done by attempting to build a tree from the graph,
+-- tracking paths leading to each node. Upon detecting a cycle, the function
+-- should return early.
+-- The current representation (below) drops information about `v`s. They
+-- should be encoded in a wrapped functor to allow cycle detection.
+-- The attempt has been abandoned because a simpler solution exists, but the
+-- code looks pretty so it's still here.
+recompose :: (Ord v, Functor t) => TypeVarMap t v -> Fix (FT t)
+recompose tv = Fix (go Root)
+  where
+    go k =
+      let node = tv Map.! k
+       in (Fix . go . NotRoot) <$> node
 
 -- | Map `a`s to `b`s.
 -- `b` *must* generate unique values on each `succ` call.
