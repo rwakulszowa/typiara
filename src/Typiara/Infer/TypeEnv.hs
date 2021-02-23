@@ -51,7 +51,23 @@ recompose tv = Fix (go Root)
   where
     go k =
       let node = tv Map.! k
-       in (Fix . go . NotRoot) <$> node
+       in Fix . go . NotRoot <$> node
+
+-- | Traverse the structure from the root, aggregating path seen so far.
+-- Bail upon finding the same node id twice in one path.
+-- TODO: rewrite / provide an alternative in terms of `recompose`
+findCycles ::
+     (Foldable t, Ord v, Eq v) => TypeVarMap t v -> Maybe [RootOrNotRoot v]
+findCycles tv =
+  case go [] Root of
+    Left cycle -> Just cycle
+    Right () -> Nothing
+  where
+    get' = (tv Map.!)
+    go path v
+      | v `elem` path = Left (v : path)
+      | otherwise =
+        () <$ sequence ([go (v : path) (NotRoot vc) | vc <- toList (get' v)])
 
 -- | Map `a`s to `b`s.
 -- `b` *must* generate unique values on each `succ` call.
