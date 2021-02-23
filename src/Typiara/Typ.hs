@@ -1,10 +1,10 @@
-module Typiara.Infer.Typ
+module Typiara.Typ
   ( Typ(..)
   , UnifyResult(..)
   , UnifyError(..)
   ) where
 
-import Typiara.Infer.FT
+import Typiara.FT
 
 -- | User defined type.
 class Typ t

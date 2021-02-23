@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveTraversable, FlexibleInstances #-}
 
-module Typiara.Infer.FT
+module Typiara.FT
   ( FT(..)
   ) where
 

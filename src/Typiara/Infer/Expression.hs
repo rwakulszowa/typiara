@@ -17,10 +17,11 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 
+import Typiara.FT (FT(..))
 import Typiara.Infer.Application (Application, decompose, inferApplication)
-import Typiara.Infer.FT (FT(..))
-import Typiara.Infer.Typ (Typ)
-import Typiara.Infer.TypeEnv
+import Typiara.LeftOrRight (LeftOrRight)
+import Typiara.Typ (Typ)
+import Typiara.TypeEnv
   ( RootOrNotRoot(..)
   , TypeEnv(..)
   , UnifyEnvError(..)
@@ -28,7 +29,6 @@ import Typiara.Infer.TypeEnv
   , singleton
   , unifyEnv
   )
-import Typiara.LeftOrRight (LeftOrRight)
 
 import qualified Typiara.Utils as Utils
 

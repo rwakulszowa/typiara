@@ -8,8 +8,8 @@ import Data.Foldable (foldlM)
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.List.NonEmpty (NonEmpty((:|)))
 
-import Typiara.Infer.Typ (Typ)
-import Typiara.Infer.TypeEnv
+import Typiara.Typ (Typ)
+import Typiara.TypeEnv
   ( RootOrNotRoot(..)
   , TypeEnv
   , UnifyEnvError

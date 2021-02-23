@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveTraversable #-}
 
-module Typiara.Infer.TypeEnv where
+module Typiara.TypeEnv where
 
 import Data.Bifunctor (bimap, first)
 import Data.Foldable (foldlM, foldrM, toList)
@@ -13,10 +13,10 @@ import qualified Data.Set as Set
 import Data.Traversable (mapAccumL)
 import qualified Data.Tree as Tree
 
+import Typiara.FT (FT(..))
 import Typiara.Fix
-import Typiara.Infer.FT (FT(..))
-import Typiara.Infer.Typ (Typ(..), UnifyError(..), UnifyResult(..))
 import Typiara.LeftOrRight (LeftOrRight)
+import Typiara.Typ (Typ(..), UnifyError(..), UnifyResult(..))
 import qualified Typiara.Utils as Utils
 
 -- | Type wrapper for identifiers with one special value.

@@ -7,12 +7,12 @@ module Infer.ExpressionSpec
 import Data.List.NonEmpty (NonEmpty(..))
 import Test.Hspec
 
+import Typiara.FT
 import Typiara.Infer.Application
 import Typiara.Infer.Expression
-import Typiara.Infer.FT
-import Typiara.Infer.SampleTyp
-import Typiara.Infer.Typ
-import Typiara.Infer.TypeEnv
+import Typiara.SampleTyp
+import Typiara.Typ
+import Typiara.TypeEnv
 
 -- | Fixed type variant to avoid ambiguous inference failures.
 singleton' :: FT SampleTyp Int -> TypeEnv SampleTyp Int

@@ -1,11 +1,11 @@
 {-# LANGUAGE DeriveTraversable #-}
 
-module Typiara.Infer.SampleTyp
+module Typiara.SampleTyp
   ( SampleTyp(..)
   ) where
 
-import Typiara.Infer.FT (FT(..))
-import Typiara.Infer.Typ (Typ(..), UnifyError(..), UnifyResult(..))
+import Typiara.FT (FT(..))
+import Typiara.Typ (Typ(..), UnifyError(..), UnifyResult(..))
 
 -- | Sample implementation.
 data SampleTyp a

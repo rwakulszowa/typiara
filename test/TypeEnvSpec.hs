@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedLists #-}
 
-module Infer.TypeEnvSpec
+module TypeEnvSpec
   ( spec
   ) where
 
 import Test.Hspec
 
-import Typiara.Infer.FT
-import Typiara.Infer.SampleTyp
-import Typiara.Infer.TypeEnv
+import Typiara.FT
+import Typiara.SampleTyp
+import Typiara.TypeEnv
 
 -- | Fix type to avoid ambiguity.
 fixT :: TypeVarMap SampleTyp Int -> TypeVarMap SampleTyp Int
