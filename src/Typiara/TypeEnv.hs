@@ -35,6 +35,10 @@ data RootOrNotRoot a
 -- do stuff and wrap it with `TypeEnv` when done.
 type TypeVarMap t v = Map.Map (RootOrNotRoot v) (FT t v)
 
+data Indexed i t a =
+  Indexed i (t a)
+  deriving (Functor)
+
 -- | Rebuild a tree from the map.
 -- NOTE: not really used anywhere (yet?).
 --
@@ -42,16 +46,20 @@ type TypeVarMap t v = Map.Map (RootOrNotRoot v) (FT t v)
 -- Cycle detection can be done by attempting to build a tree from the graph,
 -- tracking paths leading to each node. Upon detecting a cycle, the function
 -- should return early.
--- The current representation (below) drops information about `v`s. They
--- should be encoded in a wrapped functor to allow cycle detection.
 -- The attempt has been abandoned because a simpler solution exists, but the
 -- code looks pretty so it's still here.
-recompose :: (Ord v, Functor t) => TypeVarMap t v -> Fix (FT t)
-recompose tv = Fix (go Root)
+recompose ::
+     (Ord v, Functor t)
+  => TypeVarMap t v
+  -> Fix (Indexed (RootOrNotRoot v) (FT t))
+recompose tv = Fix (Indexed Root (go Root))
   where
     go k =
       let node = tv Map.! k
-       in Fix . go . NotRoot <$> node
+       in (\k ->
+             let k' = NotRoot k
+              in Fix . Indexed k' . go $ k') <$>
+          node
 
 -- | Traverse the structure from the root, aggregating path seen so far.
 -- Bail upon finding the same node id twice in one path.
