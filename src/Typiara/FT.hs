@@ -4,6 +4,8 @@ module Typiara.FT
   ( FT(..)
   ) where
 
+import Typiara.Data.Tagged (Tagged(..))
+
 -- | Function or not-a-function (or an empty type).
 -- Functions are special. All other types are provided by the user, but
 -- functions require extra care.
@@ -14,3 +16,8 @@ data FT t v
   | T (t v)
   | Nil
   deriving (Eq, Show, Ord, Functor, Foldable, Traversable)
+
+instance (Tagged (t v)) => Tagged (FT t v) where
+  tag (F _ _) = "F"
+  tag (T t) = "T." ++ tag t
+  tag Nil = "Nil"

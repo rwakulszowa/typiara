@@ -4,8 +4,8 @@ module TypeEnvSpec
   ( spec
   ) where
 
+import Data.Tree
 import Test.Hspec
-
 import Typiara.FT
 import Typiara.SampleTyp
 import Typiara.TypeEnv
@@ -43,3 +43,22 @@ spec = do
               , (NotRoot 1, T (Seq 0))
               ]
       findCycles tv `shouldBe` Just [NotRoot 0, NotRoot 1, NotRoot 0, Root]
+  describe "shape" $ do
+    it "singleton" $ do
+      let te = TypeEnv (fixT [(Root, Nil)])
+      shape te `shouldBe` Node (Root, "Nil") []
+    it "tree" $ do
+      let te =
+            TypeEnv
+              (fixT
+                 [ (Root, F 0 1)
+                 , (NotRoot 0, Nil)
+                 , (NotRoot 1, T (Seq 2))
+                 , (NotRoot 2, T Num)
+                 ])
+      shape te `shouldBe`
+        Node
+          (Root, "F")
+          [ Node (NotRoot 0, "Nil") []
+          , Node (NotRoot 1, "T.Seq") [Node (NotRoot 2, "T.Num") []]
+          ]

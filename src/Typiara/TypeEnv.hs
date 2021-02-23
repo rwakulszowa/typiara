@@ -1,8 +1,9 @@
-{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE DeriveTraversable, DeriveDataTypeable #-}
 
 module Typiara.TypeEnv where
 
 import Data.Bifunctor (bimap, first)
+import Data.Data (Data, Typeable)
 import Data.Foldable (foldlM, foldrM, toList)
 import Data.List (nub)
 import Data.List.NonEmpty (NonEmpty((:|)))
@@ -13,6 +14,7 @@ import qualified Data.Set as Set
 import Data.Traversable (mapAccumL)
 import qualified Data.Tree as Tree
 
+import Typiara.Data.Tagged (Tagged(..))
 import Typiara.FT (FT(..))
 import Typiara.Fix
 import Typiara.LeftOrRight (LeftOrRight)
@@ -23,7 +25,7 @@ import qualified Typiara.Utils as Utils
 data RootOrNotRoot a
   = Root
   | NotRoot a
-  deriving (Eq, Show, Ord, Functor, Traversable, Foldable)
+  deriving (Eq, Show, Ord, Functor, Traversable, Foldable, Data, Typeable)
 
 -- | Generic storage for type variables.
 -- Most operations are defined on `TypeEnv` directly, which is a wrapper of 
@@ -124,6 +126,16 @@ newtype TypeEnv t v =
     { unTypeEnv :: TypeVarMap t v
     }
   deriving (Eq, Show, Ord)
+
+shape ::
+     (Ord v, Foldable t, Tagged (t v))
+  => TypeEnv t v
+  -> Tree.Tree (RootOrNotRoot v, String)
+shape te = Tree.unfoldTree f Root
+  where
+    f v =
+      let n = Maybe.fromJust (getR te v)
+       in ((v, tag n), NotRoot <$> toList n)
 
 -- TODO: custom `Eq` implementation, converting the container into a tree and refreshing topologically.
 -- A conversion to `Tree` would be useful for cycle detection as well.
