@@ -35,3 +35,4 @@ instance (Data a) => Tagged SampleTyp a where
   fromTag "Num" [] = Just Num
   fromTag "Str" [] = Just Str
   fromTag "Seq" [a] = Just (Seq a)
+  fromTag _ _ = Nothing

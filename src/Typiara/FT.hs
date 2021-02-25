@@ -25,3 +25,4 @@ instance (Tagged t v) => Tagged (FT t) v where
   fromTag "Nil" [] = Just Nil
   fromTag "F" [a, b] = Just (F a b)
   fromTag ('T':'.':ts) xs = T <$> fromTag ts xs
+  fromTag _ _ = Nothing

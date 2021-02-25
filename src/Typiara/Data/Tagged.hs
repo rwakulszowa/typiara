@@ -10,5 +10,5 @@ module Typiara.Data.Tagged where
 --
 -- See `DeriveDataTypeable` extension for an easy to use `toConstr` function.
 class Tagged t a where
-  tag :: (t a) -> String
+  tag :: t a -> String
   fromTag :: String -> [a] -> Maybe (t a)

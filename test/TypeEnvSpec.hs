@@ -50,10 +50,10 @@ spec = do
               Root
               [Node (NotRoot 0) [], Node (NotRoot 1) [Node (NotRoot 2) []]]
       let c =
-            [ (Root, "F 0 1")
+            [ (Root, "F")
             , (NotRoot 0, "Nil")
-            , (NotRoot 1, "T (Seq 2)")
-            , (NotRoot 2, "T Num")
+            , (NotRoot 1, "T.Seq")
+            , (NotRoot 2, "T.Num")
             ]
       fromTree s c `shouldBe`
         Right
@@ -64,6 +64,11 @@ spec = do
                 , (NotRoot 1, T (Seq 2))
                 , (NotRoot 2, T Num)
                 ]))
+    it "missing vars" $ do
+      let s = Node Root [Node (NotRoot 0) []]
+      let c = [(Root, "F")]
+      (fromTree s c :: Either (FromTreeError Int) (TypeEnv SampleTyp Int)) `shouldBe`
+        Left (UntagError "F" [0])
   describe "findCycles" $ do
     it "singleton" $ do
       let tv = fixT [(Root, Nil)]

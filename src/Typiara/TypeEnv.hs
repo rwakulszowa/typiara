@@ -36,7 +36,7 @@ instance (Enum a) => Enum (RootOrNotRoot a) where
   toEnum 0 = Root
   toEnum i = NotRoot (toEnum (i - 1))
   fromEnum Root = 0
-  fromEnum (NotRoot a) = (fromEnum a) + 1
+  fromEnum (NotRoot a) = fromEnum a + 1
 
 -- | Generic storage for type variables.
 -- Most operations are defined on `TypeEnv` directly, which is a wrapper of 
@@ -142,12 +142,8 @@ newtype TypeEnv t v =
 -- Rejects out of sync inputs (i.e. such that the shape doesn't match constraint keys).
 --
 -- `Num -> Num` == `(f [a, a], [(f, F), (a, Num)])`
---
--- The function utilizes the `Read` class to validate type arities.
--- FIXME: pass and parse tokens explicitly. The `Read` attempt is a bit hacky and doesn't match
--- the expected api (requires specifying constraints twice).
 fromTree ::
-     (Ord v, Read (t v), Read v, Enum v, Show v, Show (t v))
+     (Ord v, Tagged t v, Enum v)
   => Tree.Tree (RootOrNotRoot v)
   -> Map.Map (RootOrNotRoot v) String
   -> Either (FromTreeError v) (TypeEnv t v)
@@ -156,18 +152,24 @@ fromTree shape constraints = do
   return (TypeEnv (Map.fromList s))
   where
     get v = Utils.maybeError (VarNotFound v) (constraints Map.!? v)
-    read' s = Utils.maybeError (ReadError s) (readMaybe s)
+    untag :: (Tagged t a) => String -> [a] -> Either (FromTreeError a) (t a)
+    untag t vs = Utils.maybeError (UntagError t vs) (fromTag t vs)
+    rejectRoot Root = Left BadShape
+    rejectRoot (NotRoot a) = Right a
     -- | Iterate the tree, reading items in the process and storing processed items in a list.
     -- The list will be later compressed into a map.
     go (Tree.Node v vs) = do
       c <- lift (get v)
-      t <- lift (read' c)
+      vs' <- lift (traverse rejectRoot . fmap Tree.rootLabel $ vs)
+      t <- lift (untag c vs')
       tell [(v, t)]
       mapM_ go vs
 
 data FromTreeError a
   = VarNotFound (RootOrNotRoot a)
-  | ReadError String
+  | UntagError String [a]
+  | BadShape
+  -- ^ Thrown if `Root` appears in a non-root position.
   deriving (Eq, Show)
 
 shape ::
