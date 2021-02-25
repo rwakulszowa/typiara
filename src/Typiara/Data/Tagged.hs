@@ -1,3 +1,5 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 module Typiara.Data.Tagged where
 
 -- | String representation of data constructors.
@@ -7,5 +9,6 @@ module Typiara.Data.Tagged where
 -- the actual values provided to each constructor.
 --
 -- See `DeriveDataTypeable` extension for an easy to use `toConstr` function.
-class Tagged t where
-  tag :: t -> String
+class Tagged t a where
+  tag :: (t a) -> String
+  fromTag :: String -> [a] -> Maybe (t a)

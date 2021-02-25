@@ -171,7 +171,7 @@ data FromTreeError a
   deriving (Eq, Show)
 
 shape ::
-     (Ord v, Foldable t, Tagged (t v))
+     (Ord v, Foldable t, Tagged t v)
   => TypeEnv t v
   -> Tree.Tree (RootOrNotRoot v, String)
 shape te = Tree.unfoldTree f Root
@@ -180,7 +180,7 @@ shape te = Tree.unfoldTree f Root
       let n = Maybe.fromJust (getR te v)
        in ((v, tag n), NotRoot <$> toList n)
 
-instance (Ord v, Foldable t, Tagged (t v)) => Eq (TypeEnv t v) where
+instance (Ord v, Foldable t, Tagged t v) => Eq (TypeEnv t v) where
   (==) = (==) `on` refreshVs . shape
     where
       refreshVs = uncurry mzip . first (snd . Utils.refresh [0 ..]) . munzip

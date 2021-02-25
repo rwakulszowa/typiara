@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveTraversable, DeriveDataTypeable #-}
+{-# LANGUAGE DeriveTraversable, DeriveDataTypeable,
+  MultiParamTypeClasses, FlexibleInstances #-}
 
 module Typiara.SampleTyp
   ( SampleTyp(..)
@@ -27,5 +28,10 @@ instance Typ SampleTyp where
       then Right (Unified x)
       else Left (ConflictingTypes x y)
 
-instance (Data a) => Tagged (SampleTyp a) where
+instance (Data a) => Tagged SampleTyp a where
   tag = show . toConstr
+  -- TODO: try to reuse the magic `gunfold` function from `Data.Data`.
+  fromTag "Bool" [] = Just Bool
+  fromTag "Num" [] = Just Num
+  fromTag "Str" [] = Just Str
+  fromTag "Seq" [a] = Just (Seq a)
