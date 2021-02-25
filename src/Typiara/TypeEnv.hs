@@ -2,6 +2,7 @@
 
 module Typiara.TypeEnv where
 
+import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Writer.Strict
 import Control.Monad.Zip (munzip, mzip)
 import Data.Bifunctor (bimap, first, second)
@@ -16,6 +17,7 @@ import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 import Data.Traversable (mapAccumL)
 import qualified Data.Tree as Tree
+import Text.Read (readMaybe)
 
 import Typiara.Data.Tagged (Tagged(..))
 import Typiara.FT (FT(..))
@@ -148,17 +150,25 @@ fromTree ::
      (Ord v, Read (t v), Read v, Enum v, Show v, Show (t v))
   => Tree.Tree (RootOrNotRoot v)
   -> Map.Map (RootOrNotRoot v) String
-  -> TypeEnv t v
-fromTree shape constraints = TypeEnv . Map.fromList . snd . runWriter $ go shape
+  -> Either (FromTreeError v) (TypeEnv t v)
+fromTree shape constraints = do
+  ((), s) <- runWriterT (go shape)
+  return (TypeEnv (Map.fromList s))
   where
-    get v = constraints Map.! v
+    get v = Utils.maybeError (VarNotFound v) (constraints Map.!? v)
+    read' s = Utils.maybeError (ReadError s) (readMaybe s)
     -- | Iterate the tree, reading items in the process and storing processed items in a list.
     -- The list will be later compressed into a map.
     go (Tree.Node v vs) = do
-      let t = read (get v)
+      c <- lift (get v)
+      t <- lift (read' c)
       tell [(v, t)]
       mapM_ go vs
-      return ()
+
+data FromTreeError a
+  = VarNotFound (RootOrNotRoot a)
+  | ReadError String
+  deriving (Eq, Show)
 
 shape ::
      (Ord v, Foldable t, Tagged (t v))
