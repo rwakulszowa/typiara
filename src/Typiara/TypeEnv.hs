@@ -2,6 +2,7 @@
 
 module Typiara.TypeEnv where
 
+import Control.Monad.Trans.Writer.Strict
 import Control.Monad.Zip (munzip, mzip)
 import Data.Bifunctor (bimap, first, second)
 import Data.Data (Data, Typeable)
@@ -28,6 +29,12 @@ data RootOrNotRoot a
   = Root
   | NotRoot a
   deriving (Eq, Show, Ord, Functor, Traversable, Foldable, Data, Typeable)
+
+instance (Enum a) => Enum (RootOrNotRoot a) where
+  toEnum 0 = Root
+  toEnum i = NotRoot (toEnum (i - 1))
+  fromEnum Root = 0
+  fromEnum (NotRoot a) = (fromEnum a) + 1
 
 -- | Generic storage for type variables.
 -- Most operations are defined on `TypeEnv` directly, which is a wrapper of 
@@ -128,6 +135,30 @@ newtype TypeEnv t v =
     { unTypeEnv :: TypeVarMap t v
     }
   deriving (Show, Ord)
+
+-- | Build an instance from shape and constraints.
+-- Rejects out of sync inputs (i.e. such that the shape doesn't match constraint keys).
+--
+-- `Num -> Num` == `(f [a, a], [(f, F), (a, Num)])`
+--
+-- The function utilizes the `Read` class to validate type arities.
+-- FIXME: pass and parse tokens explicitly. The `Read` attempt is a bit hacky and doesn't match
+-- the expected api (requires specifying constraints twice).
+fromTree ::
+     (Ord v, Read (t v), Read v, Enum v, Show v, Show (t v))
+  => Tree.Tree (RootOrNotRoot v)
+  -> Map.Map (RootOrNotRoot v) String
+  -> TypeEnv t v
+fromTree shape constraints = TypeEnv . Map.fromList . snd . runWriter $ go shape
+  where
+    get v = constraints Map.! v
+    -- | Iterate the tree, reading items in the process and storing processed items in a list.
+    -- The list will be later compressed into a map.
+    go (Tree.Node v vs) = do
+      let t = read (get v)
+      tell [(v, t)]
+      mapM_ go vs
+      return ()
 
 shape ::
      (Ord v, Foldable t, Tagged (t v))

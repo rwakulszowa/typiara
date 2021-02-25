@@ -15,7 +15,7 @@ data FT t v
   = F v v
   | T (t v)
   | Nil
-  deriving (Eq, Show, Ord, Functor, Foldable, Traversable)
+  deriving (Eq, Show, Read, Ord, Functor, Foldable, Traversable)
 
 instance (Tagged (t v)) => Tagged (FT t v) where
   tag (F _ _) = "F"

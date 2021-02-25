@@ -39,6 +39,30 @@ spec = do
               (fixT [(Root, F 0 1), (NotRoot 0, T Num), (NotRoot 1, T Num)])
       let y = TypeEnv (fixT [(Root, F 0 0), (NotRoot 0, T Num)])
       x == y `shouldBe` False
+  describe "fromTree" $ do
+    it "singleton" $ do
+      let s = Node Root []
+      let c = [(Root, "Nil")]
+      fromTree s c `shouldBe` TypeEnv (fixT [(Root, Nil)])
+    it "tree" $ do
+      let s =
+            Node
+              Root
+              [Node (NotRoot 0) [], Node (NotRoot 1) [Node (NotRoot 2) []]]
+      let c =
+            [ (Root, "F 0 1")
+            , (NotRoot 0, "Nil")
+            , (NotRoot 1, "T (Seq 2)")
+            , (NotRoot 2, "T Num")
+            ]
+      fromTree s c `shouldBe`
+        TypeEnv
+          (fixT
+             [ (Root, F 0 1)
+             , (NotRoot 0, Nil)
+             , (NotRoot 1, T (Seq 2))
+             , (NotRoot 2, T Num)
+             ])
   describe "findCycles" $ do
     it "singleton" $ do
       let tv = fixT [(Root, Nil)]

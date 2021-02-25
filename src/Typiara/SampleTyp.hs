@@ -15,7 +15,7 @@ data SampleTyp a
   | Bool
   | Num
   | Str
-  deriving (Eq, Show, Ord, Functor, Foldable, Traversable, Data, Typeable)
+  deriving (Eq, Show, Read, Ord, Functor, Foldable, Traversable, Data, Typeable)
 
 instance Typ SampleTyp where
   unify Nil a = Right (Unified a)
