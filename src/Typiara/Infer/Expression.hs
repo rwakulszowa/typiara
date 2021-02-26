@@ -48,7 +48,6 @@ ref = Right . Ref
 -- The result will have an arity of application + size of args.
 --
 -- In `x y -> Inc x`, `x y` are args, `Inc x` is the application.
--- Note, that `y` is never used in the application.
 data Expression =
   Expression
     { args :: [Arg]

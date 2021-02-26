@@ -31,6 +31,11 @@ type Application a = NonEmpty.NonEmpty a
 -- The caller is responsible for mapping the result back to some external
 -- references. The returned type contains all information regarding deduced
 -- types of each application element.
+--
+-- NOTE: the function only adds constraints deduced from application shape.
+-- It *does not* reduce the input function's arity in any way.
+-- In other words, this is more of an implementation details of `Expression`.
+-- See `inferExpression` for a more user friendly interface.
 inferApplication ::
      (Typ t, Foldable t, Functor t, Ord v, Enum v)
   => Application (TypeEnv t v)
