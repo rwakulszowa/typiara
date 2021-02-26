@@ -172,6 +172,34 @@ data FromTreeError a
   -- ^ Thrown if `Root` appears in a non-root position.
   deriving (Eq, Show)
 
+-- | A more convenient variant of `fromTree`, that doesn't require wrapping
+-- ids with `RootOrNotRoot`.
+fromEnumTree ::
+     (Ord a, Enum a, Ord v, Enum v, Tagged t v)
+  => Tree.Tree a
+  -> Map.Map a String
+  -> Either (FromEnumTreeError a v) (TypeEnv t v)
+fromEnumTree shape constraints = do
+  let (diff, shape') = Utils.refresh [Root ..] shape
+  constraints' <- updateKeys diff constraints
+  first FromTreeErr (fromTree shape' constraints')
+  where
+    updateKeys diff m =
+      pure (Map.assocs m) >>= traverse f >>= Utils.mapFromListWithKeyM reject
+      where
+        f (k, v) =
+          case diff Map.!? k of
+            (Just k') -> Right (k', v)
+            Nothing -> Left (ShapeConstraintsOutOfSync k)
+        reject k _ _ = Left (KeyOverlap k)
+
+data FromEnumTreeError a v
+  = KeyOverlap (RootOrNotRoot v)
+  -- ^ Happens only on bad implementations of `Enum`.
+  | ShapeConstraintsOutOfSync a
+  | FromTreeErr (FromTreeError v)
+  deriving (Eq, Show)
+
 shape ::
      (Ord v, Foldable t, Tagged t v)
   => TypeEnv t v

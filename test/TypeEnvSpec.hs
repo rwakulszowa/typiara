@@ -69,6 +69,18 @@ spec = do
       let c = [(Root, "F")]
       (fromTree s c :: Either (FromTreeError Int) (TypeEnv SampleTyp Int)) `shouldBe`
         Left (UntagError "F" [0])
+  describe "fromEnumTree" $ do
+    it "tree" $ do
+      let s = Node 'a' [Node 'b' [], Node 'c' []]
+      let c = [('a', "F"), ('b', "Nil"), ('c', "T.Num")]
+      fromEnumTree s c `shouldBe`
+        Right
+          (TypeEnv (fixT [(Root, F 0 1), (NotRoot 0, Nil), (NotRoot 1, T Num)]))
+    it "out of sync" $ do
+      let s = Node 'x' [Node 'y' []]
+      let c = [('a', "T.Seq")]
+      (fromEnumTree s c :: Either (FromEnumTreeError Char Int) (TypeEnv SampleTyp Int)) `shouldBe`
+        Left (ShapeConstraintsOutOfSync 'a')
   describe "findCycles" $ do
     it "singleton" $ do
       let tv = fixT [(Root, Nil)]
