@@ -81,6 +81,16 @@ spec = do
       let c = [('a', "T.Seq")]
       (fromEnumTree s c :: Either (FromEnumTreeError Char Int) (TypeEnv SampleTyp Int)) `shouldBe`
         Left (ShapeConstraintsOutOfSync 'a')
+  describe "decompose" $ do
+    it "tree" $ do
+      let te =
+            TypeEnv (fixT [(Root, F 0 1), (NotRoot 0, Nil), (NotRoot 1, T Num)])
+      decompose te `shouldBe`
+        (Node 0 [Node 1 [], Node 2 []], [(0, "F"), (1, "Nil"), (2, "T.Num")])
+    it "tree with links" $ do
+      let te = TypeEnv (fixT [(Root, F 0 0), (NotRoot 0, Nil)])
+      decompose te `shouldBe`
+        (Node 0 [Node 1 [], Node 1 []], [(0, "F"), (1, "Nil")])
   describe "findCycles" $ do
     it "singleton" $ do
       let tv = fixT [(Root, Nil)]

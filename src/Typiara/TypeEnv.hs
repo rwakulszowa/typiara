@@ -17,6 +17,7 @@ import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 import Data.Traversable (mapAccumL)
 import qualified Data.Tree as Tree
+import Data.Tuple (swap)
 import Text.Read (readMaybe)
 
 import Typiara.Data.Tagged (Tagged(..))
@@ -200,6 +201,30 @@ data FromEnumTreeError a v
   | FromTreeErr (FromTreeError v)
   deriving (Eq, Show)
 
+-- | Reverse of `fromEnumTree`.
+decompose ::
+     (Ord a, Enum a, Ord v, Enum v, Tagged t v, Foldable t)
+  => TypeEnv t v
+  -> (Tree.Tree a, Map.Map a String)
+decompose = stripTags . refresh' . shape
+  where
+    refresh' = refreshVs (toEnum 0)
+    stripTags = swap . mapAccumL f Map.empty
+      where
+        f s (v, tag) =
+          let s' =
+                case s Map.!? v of
+                  Nothing -> Map.insert v tag s
+                  (Just tag')
+                    | tag' == tag -> s
+                  (Just tag') -> error "Tags out of sync"
+           in (s', v)
+
+refreshVs zero = uncurry mzip . first (snd . Utils.refresh [zero ..]) . munzip
+
+-- | Rebuild a tree.
+-- Conversion is lossless - the tree contains information about shape, links
+-- and constraints.
 shape ::
      (Ord v, Foldable t, Tagged t v)
   => TypeEnv t v
@@ -211,9 +236,7 @@ shape te = Tree.unfoldTree f Root
        in ((v, tag n), NotRoot <$> toList n)
 
 instance (Ord v, Foldable t, Tagged t v) => Eq (TypeEnv t v) where
-  (==) = (==) `on` refreshVs . shape
-    where
-      refreshVs = uncurry mzip . first (snd . Utils.refresh [0 ..]) . munzip
+  (==) = (==) `on` refreshVs 0 . shape
 
 data UnifyEnvError t v
   = KeyNotFound (RootOrNotRoot v)
