@@ -7,7 +7,7 @@ module LibSpec
 import Test.Hspec
 
 import Data.List.NonEmpty (NonEmpty(..))
-import Data.Map (Map)
+import Data.Map (Map, fromList)
 import Data.Tree (Tree(..))
 
 import Typiara.Infer.Expression
@@ -35,6 +35,8 @@ spec =
           te
             (Node 'f' [Node 's' [leaf 'a'], leaf 'a'])
             [('f', "F"), ('s', "T.Seq"), ('a', "Nil")]
+    -- a -> a
+    let id = te (Node 'f' [leaf 'a', leaf 'a']) [('f', "F"), ('a', "Nil")]
     -- a -> [a]
     let cons =
           te
@@ -61,21 +63,31 @@ spec =
             , ('b', "Nil")
             , ('c', "Nil")
             ]
-    let apply' x f = inferExpression [(f', f), (x', x)] (applicationExpr f' x')
+    -- | Apply args to a function in a single bulk operation.
+    -- There's information stored in variable names - we have to apply all
+    -- args at once (i.e. in a single `inferExpression` call), or else the
+    -- information stored in variable names won't propagate.
+    let apply' f xs =
+          inferExpression
+            (fromList ((f', f) : (xs' `zip` xs)))
+            (applicationExpr f' xs')
           where
+            n = length xs
             f' = ref "f"
-            x' = ref "x"
-            applicationExpr f x = Expression {args = [], application = f :| [x]}
+            xs' = (\i -> ref ("x" ++ show i)) <$> [0 .. n - 1]
+            applicationExpr f xs = Expression {args = [], application = f :| xs}
     describe "apply" $ do
+      xit "id . id" $
+          -- Validate that links are not lost in the process.
+          -- `Nil a, Nil b => a -> b` is very different from `Nil a => a -> a`.
+       do (compose `apply'` [id, id]) `shouldBe` Right id
       xit "inc . head" $
-        (pure compose >>= apply' inc >>= apply' head) `shouldBe`
+        (compose `apply'` [inc, head]) `shouldBe`
         Right
           (te
              (Node 'f' [Node 's' [leaf 'a'], leaf 'a'])
              [('f', "F"), ('s', "T.Seq"), ('a', "T.Num")])
       it "(inc . head) $ seq" $
-        (pure compose >>= apply' inc >>= apply' head >>= apply' seq) `shouldBe`
-        Right int
+        (compose `apply'` [inc, head, seq]) `shouldBe` Right int
       xit "(cons . inc) $ int" $
-        (pure compose >>= apply' cons >>= apply' inc >>= apply' int) `shouldBe`
-        Right seq
+        (compose `apply'` [cons, inc, int]) `shouldBe` Right seq
