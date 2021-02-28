@@ -9,6 +9,8 @@ import Test.Hspec
 
 import qualified Data.Map.Strict as Map
 
+import Data.List.NonEmpty (NonEmpty(..))
+import Data.Map (Map)
 import Data.Set (Set)
 import Data.Tree (Tree(..))
 
@@ -17,108 +19,76 @@ import qualified Typiara.LinkedTree as LinkedTree
 import qualified Typiara.TypeDef as TypeDef
 import qualified Typiara.TypeTree as TypeTree
 
-import Typiara.Example.SimpleType
+import Typiara.Infer.Expression
 import Typiara.Link (Link(..))
 import Typiara.LinkedTree (LinkedTree(..))
+import Typiara.SampleTyp
 import Typiara.TypeDef (TypeDef(..))
+import Typiara.TypeEnv
 import Typiara.TypeTree (TypeTree(..))
 import Typiara.Utils (fromRight)
 
+leaf x = Node x []
+
+te :: Tree Char -> Map Char String -> TypeEnv SampleTyp Char
+te a = fromRight . fromEnumTree a
+
 spec :: Spec
 spec =
-  describe "merge" $
+  describe "inference" $
     -- Int
    do
-    let intDef :: TypeDef (Set SimpleType) =
-          TypeDef (Node "root" []) (Map.fromList [("root", [RigidType Int])])
+    let int = te (leaf 'a') [('a', "T.Num")]
     -- [Int]
-    let seqDef :: TypeDef (Set SimpleType) =
-          TypeDef
-            (Node "root" [Node "x" []])
-            (Map.fromList [("root", [RigidType Seq]), ("x", [RigidType Int])])
+    let seq = te (Node 's' [leaf 'a']) [('s', "T.Seq"), ('a', "T.Num")]
     -- Int -> Int
-    let incDef :: TypeDef (Set SimpleType) =
-          TypeDef
-            (Node "root" [Node "x" [], Node "x" []])
-            (Map.fromList [("root", [RigidType Fun]), ("x", [RigidType Int])])
+    let inc = te (Node 'f' [leaf 'a', leaf 'a']) [('f', "F"), ('a', "T.Num")]
     -- [a] -> a
-    let headDef =
-          TypeDef
-            (Node "root" [Node "seq" [Node "x" []], Node "x" []])
-            (Map.fromList
-               [("root", [RigidType Fun]), ("seq", [RigidType Seq]), ("x", [])])
+    let head =
+          te
+            (Node 'f' [Node 's' [leaf 'a'], leaf 'a'])
+            [('f', "F"), ('s', "T.Seq"), ('a', "Nil")]
     -- a -> [a]
-    let consDef =
-          TypeDef
-            (Node "root" [Node "x" [], Node "seq" [Node "x" []]])
-            (Map.fromList
-               [("root", [RigidType Fun]), ("seq", [RigidType Seq]), ("x", [])])
-      -- (b -> c) -> (a -> b) -> (a -> c)
-    let composeDef =
-          TypeDef
+    let cons =
+          te
+            (Node 'f' [leaf 'a', Node 's' [leaf 'a']])
+            [('f', "F"), ('s', "T.Seq"), ('a', "Nil")]
+    -- (b -> c) -> (a -> b) -> (a -> c)
+    let compose =
+          te
             (Node
-               "root"
-               [ Node "fbc" [Node "b" [], Node "c" []]
+               'f'
+               [ Node 'g' [leaf 'b', leaf 'c']
                , Node
-                   "f1node"
-                   [ Node "fab" [Node "a" [], Node "b" []]
-                   , Node "fac" [Node "a" [], Node "c" []]
+                   'h'
+                   [ Node 'i' [leaf 'a', leaf 'b']
+                   , Node 'j' [leaf 'a', leaf 'c']
                    ]
                ])
-            (Map.fromList
-               [ ("root", [RigidType Fun])
-               , ("fbc", [RigidType Fun])
-               , ("fab", [RigidType Fun])
-               , ("fac", [RigidType Fun])
-               , ("f1node", [RigidType Fun])
-               , ("a", [])
-               , ("b", [])
-               , ("c", [])
-               ])
-    let (Right [int, seq, inc, compose, head, cons]) =
-          mapM
-            TypeDef.intoTypeTree
-            ([intDef, seqDef, incDef, composeDef, headDef, consDef] :: [TypeDef (Set SimpleType)])
-      -- functions with arguments flipped to aid composition.
-    let merge' guest path host = TypeTree.mergeAt host path guest
-    let apply' arg fun =
-          Apply.appliedRet <$> arg `Apply.apply` Apply.applied fun
-    describe "merge" $ do
-      it "inc . head" $
-        (pure compose >>= merge' inc [0] >>= merge' head [1, 0]) `shouldBe`
+            [ ('f', "F")
+            , ('g', "F")
+            , ('h', "F")
+            , ('i', "F")
+            , ('j', "F")
+            , ('a', "Nil")
+            , ('b', "Nil")
+            , ('c', "Nil")
+            ]
+    let apply' x f = inferExpression [(f', f), (x', x)] (applicationExpr f' x')
+          where
+            f' = ref "f"
+            x' = ref "x"
+            applicationExpr f x = Expression {args = [], application = f :| [x]}
+    describe "apply" $ do
+      xit "inc . head" $
+        (pure compose >>= apply' inc >>= apply' head) `shouldBe`
         Right
-          (TypeTree . fromRight $
-           LinkedTree.linkedTree
-             (Node
-                (Link "Root")
-                [ Node (Link "Inc") [Node (Link "a") [], Node (Link "a") []]
-                , Node
-                    (Link "F1")
-                    [ Node
-                        (Link "Head")
-                        [ Node (Link "seq") [Node (Link "a") []]
-                        , Node (Link "a") []
-                        ]
-                    , Node
-                        (Link "Ret")
-                        [ Node (Link "seq") [Node (Link "a") []]
-                        , Node (Link "a") []
-                        ]
-                    ]
-                ])
-             (Map.fromList
-                [ (Link "Root", [RigidType Fun])
-                , (Link "Inc", [RigidType Fun])
-                , (Link "Head", [RigidType Fun])
-                , (Link "Ret", [RigidType Fun])
-                , (Link "F1", [RigidType Fun])
-                , (Link "seq", [RigidType Seq])
-                , (Link "a", [RigidType Int])
-                ]))
-      describe "apply" $ do
-        it "(inc . head) $ seq" $
-          (pure compose >>= apply' inc >>= apply' head >>= apply' seq) `shouldBe`
-          Right int
-        it "(cons . inc) $ int" $
-          (pure compose >>= apply' cons >>= apply' inc >>= apply' int) `shouldBe`
-          Right seq
+          (te
+             (Node 'f' [Node 's' [leaf 'a'], leaf 'a'])
+             [('f', "F"), ('s', "T.Seq"), ('a', "T.Num")])
+      it "(inc . head) $ seq" $
+        (pure compose >>= apply' inc >>= apply' head >>= apply' seq) `shouldBe`
+        Right int
+      xit "(cons . inc) $ int" $
+        (pure compose >>= apply' cons >>= apply' inc >>= apply' int) `shouldBe`
+        Right seq
