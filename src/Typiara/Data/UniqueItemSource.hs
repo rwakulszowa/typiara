@@ -1,4 +1,4 @@
-module Typiara.UniqueItemSource
+module Typiara.Data.UniqueItemSource
   ( UniqueItemSource
   , fromList
   , NextErr(..)

@@ -23,7 +23,6 @@ import Text.Read (readMaybe)
 import Typiara.Data.Tagged (Tagged(..))
 import Typiara.FT (FT(..))
 import Typiara.Fix
-import Typiara.LeftOrRight (LeftOrRight)
 import Typiara.Typ (Typ(..), UnifyError(..), UnifyResult(..))
 import qualified Typiara.Utils as Utils
 

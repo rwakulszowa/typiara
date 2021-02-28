@@ -19,7 +19,6 @@ import qualified Data.Set as Set
 
 import Typiara.FT (FT(..))
 import Typiara.Infer.Application (Application, decompose, inferApplication)
-import Typiara.LeftOrRight (LeftOrRight)
 import Typiara.Typ (Typ)
 import Typiara.TypeEnv
   ( RootOrNotRoot(..)

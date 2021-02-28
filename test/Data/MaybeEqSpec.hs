@@ -1,8 +1,8 @@
-module MaybeEqSpec
+module Data.MaybeEqSpec
   ( spec
   ) where
 
-import Typiara.MaybeEq
+import Typiara.Data.MaybeEq
 
 import Test.Hspec
 

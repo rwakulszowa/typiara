@@ -1,4 +1,4 @@
-module Typiara.MaybeEq where
+module Typiara.Data.MaybeEq where
 
 import Data.Traversable (mapAccumL)
 

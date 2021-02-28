@@ -14,8 +14,6 @@ import qualified Data.Tree as Tree
 
 import Data.Tree (Tree(..))
 
-import Typiara.OneOrTwo (OneOrTwo(..))
-
 spec :: Spec
 spec = do
   describe "hoistHeads" $ do
@@ -44,11 +42,6 @@ spec = do
       denumerateSequence [(1, 'B'), (0, 'A'), (2, 'C')] `shouldBe` Right "ABC"
     it "missing item" $
       denumerateSequence [(0, 'A'), (2, 'C')] `shouldBe` Left 1
-  describe "scanTree" $ do
-    it "singleton" $ scanTree sum (Node 1 []) `shouldBe` Node 1 []
-    it "nested" $
-      scanTree sum (Node 1 [Node 2 [], Node 3 []]) `shouldBe`
-      Node 6 [Node 2 [], Node 3 []]
   describe "pop" $ do
     it "failure" $ pop [('A', 1 :: Int)] 'B' `shouldBe` Nothing
     it "success" $

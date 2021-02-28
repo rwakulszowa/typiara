@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedLists #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module LibSpec
   ( spec
@@ -7,25 +6,13 @@ module LibSpec
 
 import Test.Hspec
 
-import qualified Data.Map.Strict as Map
-
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Map (Map)
-import Data.Set (Set)
 import Data.Tree (Tree(..))
 
-import qualified Typiara.Apply as Apply
-import qualified Typiara.LinkedTree as LinkedTree
-import qualified Typiara.TypeDef as TypeDef
-import qualified Typiara.TypeTree as TypeTree
-
 import Typiara.Infer.Expression
-import Typiara.Link (Link(..))
-import Typiara.LinkedTree (LinkedTree(..))
 import Typiara.SampleTyp
-import Typiara.TypeDef (TypeDef(..))
 import Typiara.TypeEnv
-import Typiara.TypeTree (TypeTree(..))
 import Typiara.Utils (fromRight)
 
 leaf x = Node x []

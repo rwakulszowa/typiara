@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 975149e2555cbb1fbf544379f70983f5eb27c2bd144d5bfbb882f3aeeafd1d8b
+-- hash: 31db43eda91e57402eda209a8c16782977655191d0f0fbb1819429917dbbe5ef
 
 name:           typiara
 version:        0.1.0.0
@@ -27,31 +27,18 @@ source-repository head
 
 library
   exposed-modules:
-      Typiara.ApplicableConstraint
-      Typiara.Apply
-      Typiara.Apply.ApplicationTree
-      Typiara.Apply.FullyConstrainedApplicationTree
-      Typiara.Apply.PartiallyConstrainedApplicationTree
       Typiara.Constraint
-      Typiara.Dag
+      Typiara.Data.LeftOrRight
+      Typiara.Data.MaybeEq
       Typiara.Data.Tagged
-      Typiara.Example.SimpleType
+      Typiara.Data.UniqueItemSource
       Typiara.Fix
       Typiara.FT
       Typiara.Infer.Application
       Typiara.Infer.Expression
-      Typiara.LeftOrRight
-      Typiara.Link
-      Typiara.LinkedTree
-      Typiara.MaybeEq
-      Typiara.OneOrTwo
-      Typiara.Path
       Typiara.SampleTyp
       Typiara.Typ
-      Typiara.TypeDef
       Typiara.TypeEnv
-      Typiara.TypeTree
-      Typiara.UniqueItemSource
       Typiara.Utils
   other-modules:
       Paths_typiara
@@ -68,22 +55,11 @@ test-suite typiara-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Apply.ApplicationTreeSpec
-      Apply.FullyConstrainedApplicationTreeSpec
-      Apply.PartiallyConstrainedApplicationTreeSpec
-      ApplySpec
-      DagSpec
-      Example.SimpleTypeSpec
+      Data.MaybeEqSpec
+      Data.UniqueItemSourceSpec
       Infer.ExpressionSpec
       LibSpec
-      LinkedTreeSpec
-      MaybeEqSpec
-      TestConstraint
-      TestUtils
-      TypeDefSpec
       TypeEnvSpec
-      TypeTreeSpec
-      UniqueItemSourceSpec
       UtilsSpec
       Paths_typiara
   hs-source-dirs:

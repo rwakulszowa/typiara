@@ -7,23 +7,20 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Tree as Tree
 
+import Data.Bifunctor (second)
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Map (Map)
 import Data.Set (Set)
 import Data.Tree (Tree(..))
+import Typiara.Data.LeftOrRight (LeftOrRight)
 
 import Control.Monad (foldM)
 import Control.Monad.Zip (mzip)
-import Data.Function (on)
 import Data.Functor (($>))
-import Data.List ((\\), find, groupBy, partition, sortOn)
-import Data.Maybe (fromJust, fromMaybe, maybe)
+import Data.List (find, sortOn)
+import Data.Maybe (fromJust, maybe)
 import Data.Semigroup ((<>))
 import Data.Traversable (mapAccumL)
-import Data.Tuple (swap)
-
-import Typiara.LeftOrRight
-import Typiara.OneOrTwo
 
 maybeAt :: [a] -> Int -> Maybe a
 maybeAt list index = snd <$> (find ((== index) . fst) . zip [0 ..] $ list)
@@ -38,38 +35,13 @@ hoistHeads lists =
     Map.empty
     [(x, (xs, value)) | (x:xs, value) <- lists]
 
-enumeratingTree :: Tree [Int]
-enumeratingTree =
-  let f path = (path, [path ++ [i] | i <- [0 ..]])
-   in Tree.unfoldTree f []
-
-enumerateTree = mzip enumeratingTree
-
 allStrings = [c : s | s <- "" : allStrings, c <- ['a' .. 'z']]
-
-mapLeft :: (a -> b) -> Either a c -> Either b c
-mapLeft f = either (Left . f) Right
 
 fromRight (Right x) = x
 fromRight (Left err) = error $ show err
 
-mapFst :: (a -> c) -> (a, b) -> (c, b)
-mapFst fun (a, b) = (fun a, b)
-
-mapSnd :: (b -> c) -> (a, b) -> (a, c)
-mapSnd fun (a, b) = (a, fun b)
-
 fromJustOrError :: String -> Maybe a -> a
-fromJustOrError _ (Just x) = x
-fromJustOrError err Nothing = error err
-
-sequenceFst :: (Monad m) => (m a, b) -> m (a, b)
-sequenceFst (a, b) = do
-  a' <- a
-  return (a', b)
-
-sequenceSnd :: (Monad m) => (a, m b) -> m (a, b)
-sequenceSnd x = swap <$> (sequenceFst . swap $ x)
+fromJustOrError e = fromRight . maybeError e
 
 maybeError :: err -> Maybe a -> Either err a
 maybeError err = maybe (Left err) Right
@@ -135,22 +107,15 @@ losslessZip x y =
           else Right $ drop (length x) y
    in (zippedPart, remainder)
 
-invertMap :: (Ord k, Ord v) => Map k v -> Map v (NonEmpty k)
-invertMap =
-  Map.fromListWith (<>) . fmap (swap . (\(k, v) -> (k :| [], v))) . Map.assocs
-
 mapFromListWithKeyM ::
      (Ord k, Monad m) => (k -> v -> v -> m v) -> [(k, v)] -> m (Map k v)
 mapFromListWithKeyM f assocs =
-  sequence $ Map.fromListWithKey (liftM' f) $ map (mapSnd pure) assocs
+  sequence $ Map.fromListWithKey (liftM' f) $ map (second pure) assocs
   where
     liftM' f k x y = do
       x <- x
       y <- y
       f k x y
-
-scanTree :: (Tree a -> b) -> Tree a -> Tree b
-scanTree f node@(Node _ children) = Node (f node) (scanTree f <$> children)
 
 mapKeysRejectConflicts ::
      (Ord k, Ord k') => (k -> k') -> Map k v -> Maybe (Map k' v)
@@ -172,7 +137,7 @@ popN m =
        return (m', acc ++ [v]))
     (m, mempty)
 
--- | Givan a map from k to v and a set of expected ks, turn a map
+-- | Given a map from k to v and a set of expected ks, turn a map
 -- into a function that never fails to find a value.
 -- The returned function should only be called on values included in `ks`.
 buildLookupF :: (Ord k) => Map k v -> Set k -> Either (NonEmpty k) (k -> v)
