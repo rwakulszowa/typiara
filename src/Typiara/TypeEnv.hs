@@ -315,6 +315,12 @@ unifyEnv leftIdToMerge (TypeEnv a) (TypeEnv b) =
     -- new data without dropping any).
 
 -- | Unify two variables in a given environment.
+-- TODO: there should be an option to modify keys, not just values.
+-- `F a b` may need to change to `F a a` in certain circumstances, namely,
+-- when it gets merged with a linked function. Modifying keys is risky, as it
+-- may create orphans. Change the mechanism to keep old values and create new
+-- variables whenever necessary. Old values should point to the new ones, e.g.
+-- `F a b + unify a b = F c c + Link a c + Link b c`
 unifyVars ::
      (Ord v, Typ t)
   => TypeEnv t v
