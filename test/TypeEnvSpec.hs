@@ -137,3 +137,36 @@ spec = do
           [ Node (NotRoot 0, "Nil") []
           , Node (NotRoot 1, "T.Seq") [Node (NotRoot 2, "T.Num") []]
           ]
+  describe "unifyEnv" $ do
+    it "Nil Nil, Root" $ do
+      let x = TypeEnv (fixT [(Root, Nil)])
+      let y = TypeEnv (fixT [(Root, Nil)])
+      unifyEnv Root x y `shouldBe` Right x
+    it "(a -> a) Num, NotRoot a" $ do
+      let x = TypeEnv (fixT [(Root, F 0 0), (NotRoot 0, Nil)])
+      let y = TypeEnv (fixT [(Root, T Num)])
+      unifyEnv (NotRoot 0) x y `shouldBe`
+        Right (TypeEnv (fixT [(Root, F 0 0), (NotRoot 0, T Num)]))
+    xit "(x -> y) (a -> a), NotRoot - propagates links" $
+      -- Validate that links from the right tree are propagated to the left tree.
+     do
+      let x =
+            TypeEnv (fixT [(Root, F 0 1), (NotRoot 0, Nil), (NotRoot 1, T Num)])
+      let y = TypeEnv (fixT [(Root, F 0 0), (NotRoot 0, Nil)])
+      unifyEnv Root x y `shouldBe`
+        Right (TypeEnv (fixT [(Root, F 0 0), (NotRoot 0, T Num)]))
+    it "tree" $ do
+      let te =
+            TypeEnv
+              (fixT
+                 [ (Root, F 0 1)
+                 , (NotRoot 0, Nil)
+                 , (NotRoot 1, T (Seq 2))
+                 , (NotRoot 2, T Num)
+                 ])
+      shape te `shouldBe`
+        Node
+          (Root, "F")
+          [ Node (NotRoot 0, "Nil") []
+          , Node (NotRoot 1, "T.Seq") [Node (NotRoot 2, "T.Num") []]
+          ]
