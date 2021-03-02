@@ -47,6 +47,9 @@ instance (Enum a) => Enum (RootOrNotRoot a) where
 --
 -- TLDR: Raw type variable storage. If doing unsafe stuff, fetch raw data,
 -- do stuff and wrap it with `TypeEnv` when done.
+--
+-- TODO: KVKMap for Maps where values are containers of keys, creating loops.
+-- Generic stuff to work with such objects.
 type TypeVarMap t v = Map.Map (RootOrNotRoot v) (FT t v)
 
 data Indexed i t a =
@@ -353,11 +356,23 @@ link src dst (LazyTypeEnv lte) = LazyTypeEnv (Map.alter f src lte)
   where
     f (Just _) = Just (Left (Link dst))
 
+-- | Follow a link until hitting the destination (non-link).
+-- Replaces chains, such as `a -> b -> c` with a key of `c`.
+-- NOTE: may hang on cycles. Detect and reject cycles here.
+follow :: (Ord v) => LazyTypeEnv t v -> Link v -> RootOrNotRoot v
+follow lte@(LazyTypeEnv m) (Link v) =
+  case m Map.!? v of
+    (Just (Left dst)) -> follow lte dst
+    -- ^ The destination is also a link. Use it directly.
+    (Just (Right _)) -> v
+    -- ^ The destination is not a link. Nothing to simplify here.
+    Nothing -> error "Orphaned link"
+
 -- | Replace references to `Link`s with direct pointers to destinations.
 reconcile :: (Functor t, Ord v) => LazyTypeEnv t v -> TypeEnv t v
 reconcile (LazyTypeEnv lte) =
   let (links, nonLinks) = partitionEitherMap lte
-      directLinks = (shorten <$> links)
+      directLinks = (follow (LazyTypeEnv lte) <$> links)
       -- ^ All links point directly to their final target.
       nonLinks' = fmap (applyDiff directLinks) <$> nonLinks
       -- ^ All values pointing to links are replaced with their destinations.
@@ -381,16 +396,6 @@ reconcile (LazyTypeEnv lte) =
       let (ls, rs) = Map.partition isLeft m
        in ( fromLeft (error "unexpected") <$> ls
           , fromRight (error "unexpected") <$> rs)
-    -- | Remove intermediate links from a link.
-    -- Replaces chains, such as `a -> b -> c` with a direct `a -> c` connection.
-    -- NOTE: may hang on cycles. Detect and reject cycles here.
-    shorten (Link v) =
-      case lte Map.!? v of
-        (Just (Left dst)) -> shorten dst
-        -- ^ The destination is also a link. Use it directly.
-        (Just (Right _)) -> v
-        -- ^ The destination is not a link. Nothing to simplify here.
-        Nothing -> error "Orphaned link"
     mapValues f = fmap (fmap f)
     -- | Map `k` through `m`, if found. Noop otherwise.
     applyDiff m k = Map.findWithDefault k k m
@@ -405,13 +410,13 @@ reconcile (LazyTypeEnv lte) =
 
 -- | Unify two variables in a given environment.
 unifyVars ::
-     (Ord v, Enum v, Typ t, Data v)
+     (Ord v, Enum v, Typ t, Data v, Functor t)
   => LazyTypeEnv t v
   -> (RootOrNotRoot v, RootOrNotRoot v)
   -> Either (UnifyEnvError v) (LazyTypeEnv t v)
 unifyVars ti (x, y) = do
-  tx <- ti `find` x
-  ty <- ti `find` y
+  tx <- canonicalize <$> ti `find` x
+  ty <- canonicalize <$> ti `find` y
   (UnifyResult ut vs) <- first UnifyError (tx `unify` ty)
   pure ti >>= unifySingleType ut >>= foldUnify vs
   where
@@ -422,6 +427,15 @@ unifyVars ti (x, y) = do
         (Right t) -> return t
     -- ^ Find the final destination of `k`.
     -- Follows links until hitting a non-link node.
+    canonicalize = fmap (follow ti . Link)
+    -- ^ Follow children, replace them with their destinations.
+    -- Due to existence of links, there's many ways to represent the same
+    -- canonical value. Following links should reduce all of them to the same
+    -- object - without a reduction, it's nearly impossible to compare two
+    -- instances.
+    -- TODO: consider representing canonical forms on the type level.
+    -- TODO: canonicalizing requires plenty of repetitive work. Reconsider the
+    -- LazyEnv idea.
     foldUnify pairs ti = foldlM unifyVars ti pairs
     unifySingleType t te =
       let (v, te') = insert te t
