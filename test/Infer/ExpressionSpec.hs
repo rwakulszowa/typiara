@@ -134,9 +134,9 @@ spec = do
               ]
         let expr = Expression {args = [], application = ref "f" :| [ref "a"]}
         inferExpression ts expr `shouldBe`
-          Left (UnifyEnvError (UnifyError (ConflictingTypes (T Num) (T Str))))
+          Left (UnifyEnvError (UnifyError (ConflictingTypes "T.Num" "T.Str")))
       it "Num | Num" $ do
         let ts = [(ref "f", singleton' (T Num)), (ref "a", singleton' (T Num))]
         let expr = Expression {args = [], application = ref "f" :| [ref "a"]}
         inferExpression ts expr `shouldBe`
-          Left (UnifyEnvError (UnifyError (ConflictingTypes (T Num) (F 1 2))))
+          Left (UnifyEnvError (UnifyError (ConflictingTypes "T.Num" "F")))

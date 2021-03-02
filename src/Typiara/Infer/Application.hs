@@ -4,6 +4,7 @@ module Typiara.Infer.Application
   , decompose
   ) where
 
+import Data.Data (Data)
 import Data.Foldable (foldlM)
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.List.NonEmpty (NonEmpty((:|)))
@@ -37,9 +38,9 @@ type Application a = NonEmpty.NonEmpty a
 -- In other words, this is more of an implementation details of `Expression`.
 -- See `inferExpression` for a more user friendly interface.
 inferApplication ::
-     (Typ t, Foldable t, Functor t, Ord v, Enum v)
+     (Typ t, Foldable t, Functor t, Ord v, Enum v, Data v)
   => Application (TypeEnv t v)
-  -> Either (UnifyEnvError t v) (TypeEnv t v)
+  -> Either (UnifyEnvError v) (TypeEnv t v)
 inferApplication (x NonEmpty.:| []) = Right x
 inferApplication (fun :| args) = do
   let arity = length args

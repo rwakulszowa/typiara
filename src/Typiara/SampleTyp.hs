@@ -34,7 +34,7 @@ instance Typ SampleTyp where
   unify x y =
     if x == y
       then Right (Unified x)
-      else Left (ConflictingTypes x y)
+      else Left (ConflictingTypes (tag x) (tag y))
 
 instance (Data a) => Tagged SampleTyp a where
   tag = show . toConstr

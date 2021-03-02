@@ -9,6 +9,7 @@ module Typiara.Infer.Expression
   ) where
 
 import Data.Bifunctor (first)
+import Data.Data (Data)
 import Data.Foldable (foldrM, toList)
 import Data.List.NonEmpty (NonEmpty((:|)))
 
@@ -59,17 +60,17 @@ data Expression =
     }
   deriving (Eq, Show, Ord)
 
-data InferExpressionError t v
+data InferExpressionError v
   = MissingTypes (NonEmpty.NonEmpty (Either Arg Ref))
-  | UnifyEnvError (UnifyEnvError t v)
-  | RebuildError (UnifyEnvError t v)
+  | UnifyEnvError (UnifyEnvError v)
+  | RebuildError (UnifyEnvError v)
   deriving (Eq, Show)
 
 inferExpression ::
-     (Enum v, Ord v, Show v, Show (t v), Typ t, Functor t, Foldable t)
+     (Enum v, Ord v, Show v, Show (t v), Typ t, Functor t, Foldable t, Data v)
   => Map.Map (Either Arg Ref) (TypeEnv t v)
   -> Expression
-  -> Either (InferExpressionError t v) (TypeEnv t v)
+  -> Either (InferExpressionError v) (TypeEnv t v)
 inferExpression types (Expression args application) = do
   getRefT <-
     first
