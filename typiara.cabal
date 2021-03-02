@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 31db43eda91e57402eda209a8c16782977655191d0f0fbb1819429917dbbe5ef
+-- hash: acb766b836882899df670428716145f7c5c1cff30f8c5ed7177163a388556030
 
 name:           typiara
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      Typiara
       Typiara.Constraint
       Typiara.Data.LeftOrRight
       Typiara.Data.MaybeEq
@@ -58,8 +59,8 @@ test-suite typiara-test
       Data.MaybeEqSpec
       Data.UniqueItemSourceSpec
       Infer.ExpressionSpec
-      LibSpec
       TypeEnvSpec
+      TypiaraSpec
       UtilsSpec
       Paths_typiara
   hs-source-dirs:

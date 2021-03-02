@@ -67,7 +67,7 @@ data InferExpressionError v
   deriving (Eq, Show)
 
 inferExpression ::
-     (Enum v, Ord v, Show v, Show (t v), Typ t, Functor t, Foldable t, Data v)
+     (Enum v, Ord v, Typ t, Functor t, Foldable t, Data v)
   => Map.Map (Either Arg Ref) (TypeEnv t v)
   -> Expression
   -> Either (InferExpressionError v) (TypeEnv t v)
