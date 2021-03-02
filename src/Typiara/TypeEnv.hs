@@ -312,7 +312,7 @@ unifyEnv leftIdToMerge (TypeEnv a) (TypeEnv b) =
 -- one can simply turn `a` into `Link a b`.
 newtype Link a =
   Link (RootOrNotRoot a)
-  deriving (Eq, Show, Ord)
+  deriving (Show)
 
 -- | `TypeVarMap` where values may be links to other keys.
 -- Values are containers over `RootOrNotRoot v`, instead of just `v`, because
@@ -412,21 +412,20 @@ unifyVars ::
 unifyVars ti (x, y) = do
   tx <- ti `find` x
   ty <- ti `find` y
-  unifyResult <- first UnifyError (tx `unify` ty)
-  case unifyResult of
-    (Unified t) ->
-      let (v, ti') = insert ti t
-       in Right (link x v . link y v $ ti')
-    (TypeVarsToUnify ts) -> foldUnify ti ts
-    -- | Find the final destination of `k`.
-    -- Follows links until hitting a non-link node.
+  (UnifyResult ut vs) <- first UnifyError (tx `unify` ty)
+  pure ti >>= unifySingleType ut >>= foldUnify vs
   where
     find t k = do
       found <- Utils.maybeError (KeyNotFound k) (unLazyTypeEnv t Map.!? k)
       case found of
         (Left (Link v)) -> find t v
         (Right t) -> return t
-    foldUnify ti pairs = foldlM unifyVars ti pairs
+    -- ^ Find the final destination of `k`.
+    -- Follows links until hitting a non-link node.
+    foldUnify pairs ti = foldlM unifyVars ti pairs
+    unifySingleType t te =
+      let (v, te') = insert te t
+       in Right (link x v . link y v $ te')
 
 -- | `TypeEnv` representing a chain of functions.
 buildFunEnv :: (Ord v, Enum v) => Int -> TypeEnv t v

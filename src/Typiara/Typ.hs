@@ -17,9 +17,11 @@ class Typ t
 -- | Unification may produce side effects, e.g. when two complex types are
 -- unified and two different type variables appear at the same index, they have
 -- to be merged into one.
-data UnifyResult t v
-  = Unified (FT t v)
-  | TypeVarsToUnify [(v, v)]
+data UnifyResult t v =
+  UnifyResult
+    { unified :: FT t v
+    , typeVarsToUnify :: [(v, v)]
+    }
   deriving (Eq, Show, Ord)
 
 data UnifyError =

@@ -19,21 +19,18 @@ data SampleTyp a
   deriving (Eq, Show, Read, Ord, Functor, Foldable, Traversable, Data, Typeable)
 
 instance Typ SampleTyp where
-  unify Nil a = Right (Unified a)
+  unify Nil a = Right (UnifyResult a [])
   unify a Nil = unify Nil a
-  unify (T (Seq a)) (T (Seq b)) = Right (TypeVarsToUnify [(a, b)])
+  unify (T (Seq a)) (T (Seq b)) = Right (UnifyResult (T (Seq a)) [(a, b)])
   unify (F a b) (F a' b')
-  -- ^ Detect links on either side and propagate them to the other.
-  -- Propagate values afterwards. The caller is responsible for optimizing the
-  -- calls, i.e. short circuiting unification of same values.
-   =
-    let leftToRightLink = [(a', b') | a == b]
-        rightToLeftLink = [(a, b) | a' == b']
-        values = [(a, a'), (b, b')]
-     in Right (TypeVarsToUnify (leftToRightLink ++ rightToLeftLink ++ values))
+    | a == b || a' == b' =
+      Right (UnifyResult (F a a) [(a, b), (a, a'), (a, b')])
+  -- ^ There is a link on either side. All variables are unified to the same ident, the result is linked.
+  unify (F a b) (F a' b') = Right (UnifyResult (F a b) [(a, a'), (b, b')])
+  -- ^ No links. Propagate pairwise, but do not introduce any links.
   unify x y =
     if x == y
-      then Right (Unified x)
+      then Right (UnifyResult x [])
       else Left (ConflictingTypes (tag x) (tag y))
 
 instance (Data a) => Tagged SampleTyp a where

@@ -87,7 +87,7 @@ spec =
           (te
              (Node 'f' [Node 's' [leaf 'a'], leaf 'a'])
              [('f', "F"), ('s', "T.Seq"), ('a', "T.Num")])
-      it "(inc . head) $ seq" $
+      xit "(inc . head) $ seq" $
         (compose `apply'` [inc, head, seq]) `shouldBe` Right int
       xit "(cons . inc) $ int" $
         (compose `apply'` [cons, inc, int]) `shouldBe` Right seq
