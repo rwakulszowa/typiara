@@ -368,8 +368,18 @@ follow lte@(LazyTypeEnv m) (Link v) =
     -- ^ The destination is not a link. Nothing to simplify here.
     Nothing -> error "Orphaned link"
 
+replace a b v =
+  if v == a
+    then b
+    else v
+
+-- | Replace all occurences of `a` with `b`.
+-- Modifies values, not keys.
+substitute :: (Functor f, Ord a) => a -> a -> Map.Map a (f a) -> Map.Map a (f a)
+substitute a b = fmap (fmap (replace a b))
+
 -- | Replace references to `Link`s with direct pointers to destinations.
-reconcile :: (Functor t, Ord v) => LazyTypeEnv t v -> TypeEnv t v
+reconcile :: (Functor t, Foldable t, Ord v) => LazyTypeEnv t v -> TypeEnv t v
 reconcile (LazyTypeEnv lte) =
   let (links, nonLinks) = partitionEitherMap lte
       directLinks = (follow (LazyTypeEnv lte) <$> links)
@@ -383,27 +393,21 @@ reconcile (LazyTypeEnv lte) =
           -- Root must've been partitioned into the link map.
           -- Promote the variable it points to the new root.
           else let newRoot = directLinks Map.! Root
-                in moveKey newRoot Root . mapValues (replace newRoot Root) $
-                   nonLinks'
+                in moveKey newRoot Root . substitute newRoot Root $ nonLinks'
       -- ^ Root is guaranteed to be present in the non-link map.
       -- TODO: find cycles
       unRooted = fmap unwrapR <$> hoistedNonLinks
       -- ^ Unwrap values. If any of them contained a `Root` value, it would've
       -- been detected as a cycle.
-   in TypeEnv unRooted
+   in clean (TypeEnv unRooted)
   where
     partitionEitherMap m =
       let (ls, rs) = Map.partition isLeft m
        in ( fromLeft (error "unexpected") <$> ls
           , fromRight (error "unexpected") <$> rs)
-    mapValues f = fmap (fmap f)
     -- | Map `k` through `m`, if found. Noop otherwise.
     applyDiff m k = Map.findWithDefault k k m
     unwrapR (NotRoot a) = a
-    replace a b v =
-      if v == a
-        then b
-        else v
     moveKey k k' = Map.mapKeysWith reject (replace k k')
       where
         reject _ _ = error "reject"
@@ -414,32 +418,49 @@ unifyVars ::
   => LazyTypeEnv t v
   -> (RootOrNotRoot v, RootOrNotRoot v)
   -> Either (UnifyEnvError v) (LazyTypeEnv t v)
-unifyVars ti (x, y) = do
-  tx <- canonicalize <$> ti `find` x
-  ty <- canonicalize <$> ti `find` y
-  (UnifyResult ut vs) <- first UnifyError (tx `unify` ty)
-  pure ti >>= unifySingleType ut >>= foldUnify vs
+unifyVars ti (x, y) = go (follow' x, follow' y)
+  -- | Resolve (follow) variables before performing any operations.
+  --
+  -- Calculation state is shared between pending `pairs` and `ti`. `pairs` may
+  -- contain variables as they were known at the time of a given iteration, but
+  -- `ti` may have changed since.
+  -- All information is preserved, so the variables still exist, but they may
+  -- point to new destinations. `follow` them to make sure we're operating on
+  -- fresh state.
+  --
+  -- Not doing this would create a risk of dropping some link information.
+  -- `link` is lossy and depends on the caller to have used the value before
+  -- the call. Since the value represents the fresh state, and the caller operates on
+  -- potentially outdated state (`(x, y)` may have been created many iterations
+  -- before), dropping the value would be equivalent to losing some past updates.
   where
-    find t k = do
-      found <- Utils.maybeError (KeyNotFound k) (unLazyTypeEnv t Map.!? k)
-      case found of
-        (Left (Link v)) -> find t v
-        (Right t) -> return t
-    -- ^ Find the final destination of `k`.
-    -- Follows links until hitting a non-link node.
-    canonicalize = fmap (follow ti . Link)
-    -- ^ Follow children, replace them with their destinations.
-    -- Due to existence of links, there's many ways to represent the same
-    -- canonical value. Following links should reduce all of them to the same
-    -- object - without a reduction, it's nearly impossible to compare two
-    -- instances.
-    -- TODO: consider representing canonical forms on the type level.
-    -- TODO: canonicalizing requires plenty of repetitive work. Reconsider the
-    -- LazyEnv idea.
-    foldUnify pairs ti = foldlM unifyVars ti pairs
-    unifySingleType t te =
-      let (v, te') = insert te t
-       in Right (link x v . link y v $ te')
+    follow' = follow ti . Link
+    go (x, y) = do
+      tx <- canonicalize <$> ti `find` x
+      ty <- canonicalize <$> ti `find` y
+      (UnifyResult ut vs) <- first UnifyError (tx `unify` ty)
+      pure ti >>= unifySingleType ut >>= foldUnify vs
+      where
+        find t k = do
+          found <- Utils.maybeError (KeyNotFound k) (unLazyTypeEnv t Map.!? k)
+          case found of
+            (Right t) -> return t
+            -- ^ Find the final destination of `k`.
+            -- The link is expected to be shortened by the parent function.
+            -- Links are not expected.
+        canonicalize = fmap (follow ti . Link)
+            -- ^ Follow children, replace them with their destinations.
+            -- Due to existence of links, there's many ways to represent the same
+            -- canonical value. Following links should reduce all of them to the same
+            -- object - without a reduction, it's nearly impossible to compare two
+            -- instances.
+            -- TODO: consider representing canonical forms on the type level.
+            -- TODO: canonicalizing requires plenty of repetitive work. Reconsider the
+            -- LazyEnv idea.
+        foldUnify pairs ti = foldlM unifyVars ti pairs
+        unifySingleType t te =
+          let (v, te') = insert te t
+           in Right (link x v . link y v $ te')
 
 -- | `TypeEnv` representing a chain of functions.
 buildFunEnv :: (Ord v, Enum v) => Int -> TypeEnv t v

@@ -147,7 +147,7 @@ spec = do
       let y = TypeEnv (fixT [(Root, T Num)])
       unifyEnv (NotRoot 0) x y `shouldBe`
         Right (TypeEnv (fixT [(Root, F 0 0), (NotRoot 0, T Num)]))
-    xit "(x -> y) (a -> a), NotRoot - propagates links" $
+    it "(x -> y) (a -> a), NotRoot - propagates links" $
       -- Validate that links from the right tree are propagated to the left tree.
      do
       let x =
@@ -155,6 +155,32 @@ spec = do
       let y = TypeEnv (fixT [(Root, F 0 0), (NotRoot 0, Nil)])
       unifyEnv Root x y `shouldBe`
         Right (TypeEnv (fixT [(Root, F 0 0), (NotRoot 0, T Num)]))
+    it
+      "((x -> y) -> (y -> z)) (a -> a), NotRoot - propagates links across branches" $
+      -- Validate that links from the rigt tree are propagated to the merged node,
+      -- as well as the other branch.
+     do
+      let x =
+            TypeEnv
+              (fixT
+                 [ (Root, F 0 1)
+                 , (NotRoot 0, F 2 3)
+                 , (NotRoot 1, F 3 4)
+                 , (NotRoot 2, Nil)
+                 , (NotRoot 3, Nil)
+                 , (NotRoot 4, Nil)
+                 ])
+      let y = TypeEnv (fixT [(Root, F 0 0), (NotRoot 0, Nil)])
+      unifyEnv (NotRoot 0) x y `shouldBe`
+        Right
+          (TypeEnv
+             (fixT
+                [ (Root, F 0 1)
+                , (NotRoot 0, F 2 2)
+                , (NotRoot 1, F 2 3)
+                , (NotRoot 2, Nil)
+                , (NotRoot 3, Nil)
+                ]))
     it "tree" $ do
       let te =
             TypeEnv

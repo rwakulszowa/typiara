@@ -77,17 +77,17 @@ spec =
             xs' = (\i -> ref ("x" ++ show i)) <$> [0 .. n - 1]
             applicationExpr f xs = Expression {args = [], application = f :| xs}
     describe "apply" $ do
-      xit "id . id" $
+      it "id . id" $
           -- Validate that links are not lost in the process.
           -- `Nil a, Nil b => a -> b` is very different from `Nil a => a -> a`.
        do (compose `apply'` [id, id]) `shouldBe` Right id
-      xit "inc . head" $
+      it "inc . head" $
         (compose `apply'` [inc, head]) `shouldBe`
         Right
           (te
              (Node 'f' [Node 's' [leaf 'a'], leaf 'a'])
              [('f', "F"), ('s', "T.Seq"), ('a', "T.Num")])
-      xit "(inc . head) $ seq" $
+      it "(inc . head) $ seq" $
         (compose `apply'` [inc, head, seq]) `shouldBe` Right int
-      xit "(cons . inc) $ int" $
+      it "(cons . inc) $ int" $
         (compose `apply'` [cons, inc, int]) `shouldBe` Right seq
