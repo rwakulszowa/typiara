@@ -91,6 +91,17 @@ spec = do
       let te = TypeEnv (fixT [(Root, F 0 0), (NotRoot 0, Nil)])
       decompose te `shouldBe`
         (Node 0 [Node 1 [], Node 1 []], [(0, "F"), (1, "Nil")])
+  describe "refreshTypeEnv" $ do
+    it "tree" $
+      -- | Regular `==` comparison ignores ids. Support it by directly comparing
+      -- variable names.
+     do
+      let x =
+            TypeEnv (fixT [(Root, F 4 2), (NotRoot 4, Nil), (NotRoot 2, T Num)])
+      let freshX = refreshTypeEnv x
+      let y =
+            TypeEnv (fixT [(Root, F 0 1), (NotRoot 0, Nil), (NotRoot 1, T Num)])
+      (freshX, allVars (unTypeEnv freshX)) `shouldBe` (y, [0, 1])
   describe "findCycles" $ do
     it "singleton" $ do
       let tv = fixT [(Root, Nil)]

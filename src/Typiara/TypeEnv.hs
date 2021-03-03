@@ -226,6 +226,10 @@ decompose = stripTags . refresh' . shape
                   (Just tag') -> error "Tags out of sync"
            in (s', v)
 
+refreshTypeEnv ::
+     (Functor t, Foldable t, Ord v, Enum v) => TypeEnv t v -> TypeEnv t v
+refreshTypeEnv = TypeEnv . snd . refresh . unTypeEnv
+
 refreshVs zero = uncurry mzip . first (snd . Utils.refresh [zero ..]) . munzip
 
 -- | Rebuild a tree.
