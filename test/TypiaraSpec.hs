@@ -16,6 +16,8 @@ import Typiara.SampleTyp
 import Typiara.TypeEnv
 import Typiara.Utils (fromRight)
 
+import Debug.Trace
+
 leaf x = Node x []
 
 te :: Tree Char -> Map Char String -> TypeEnv SampleTyp Char
@@ -88,3 +90,21 @@ spec =
       it "fix $ head" $
         (fix `apply` [head]) `shouldBe`
         (Left . UnifyEnvError . Cycle) ["T.Seq", "T.Seq", "F", "F"]
+    describe "corner cases" $ do
+      it "self merge" $
+        -- The function will attempt to merge c with d, where d is already
+        -- a parent of c.
+        -- Forms a cycle on a single variable.
+        -- Regression test.
+       do
+        let x =
+              te
+                (Node
+                   'a'
+                   [ Node 'b' [leaf 'c', Node 'd' [leaf 'c', leaf 'c']]
+                   , leaf 'e'
+                   ])
+                [('a', "F"), ('b', "F"), ('c', "Nil"), ('d', "F"), ('e', "Nil")]
+        let y = te (Node 'a' [leaf 'b', leaf 'b']) [('a', "F"), ('b', "Nil")]
+        (x `apply` [y]) `shouldBe`
+          (Left . UnifyEnvError . Cycle) ["F", "F", "F", "F"]

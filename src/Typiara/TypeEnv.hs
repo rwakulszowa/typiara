@@ -454,6 +454,12 @@ unifyVars ti (x, y) = go (follow' x, follow' y)
   -- before), dropping the value would be equivalent to losing some past updates.
   where
     follow' = follow ti . Link
+    go (x, y)
+      | x == y = Right ti
+    -- ^ Each iteration creates a new variable and attempts to merge it with
+    -- the old ones. If x == y, we would always queue two new pairs of the same
+    -- variable, which would in turn produce another pair, and so on.
+    -- Return early to break the loop. Same variables are unified by definition.
     go (x, y) = do
       tx <- canonicalize <$> ti `find` x
       ty <- canonicalize <$> ti `find` y
