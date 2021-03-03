@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Typiara.Infer.Expression
   ( Ref(..)
   , ref
@@ -18,6 +20,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 
+import Typiara.Data.Tagged (Tagged)
 import Typiara.FT (FT(..))
 import Typiara.Infer.Application (Application, decompose, inferApplication)
 import Typiara.Typ (Typ)
@@ -67,7 +70,14 @@ data InferExpressionError v
   deriving (Eq, Show)
 
 inferExpression ::
-     (Enum v, Ord v, Typ t, Functor t, Foldable t, Data v)
+     ( Enum v
+     , Ord v
+     , Typ t
+     , Functor t
+     , Foldable t
+     , Data v
+     , Tagged t (RootOrNotRoot v)
+     )
   => Map.Map (Either Arg Ref) (TypeEnv t v)
   -> Expression
   -> Either (InferExpressionError v) (TypeEnv t v)

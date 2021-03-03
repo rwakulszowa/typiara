@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 -- | Core functionality exported in a user friendly format.
 module Typiara
   ( apply
@@ -6,6 +8,7 @@ module Typiara
 import Data.Data (Data)
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Map.Strict (fromList)
+import Typiara.Data.Tagged (Tagged)
 import Typiara.Infer.Expression
   ( Expression(..)
   , InferExpressionError
@@ -13,11 +16,18 @@ import Typiara.Infer.Expression
   , ref
   )
 import Typiara.Typ (Typ)
-import Typiara.TypeEnv (TypeEnv)
+import Typiara.TypeEnv (RootOrNotRoot, TypeEnv)
 
 -- | Apply args to a function in a single bulk operation.
 apply ::
-     (Enum v, Ord v, Typ t, Functor t, Foldable t, Data v)
+     ( Enum v
+     , Ord v
+     , Typ t
+     , Functor t
+     , Foldable t
+     , Data v
+     , Tagged t (RootOrNotRoot v)
+     )
   => TypeEnv t v
   -> [TypeEnv t v]
   -> Either (InferExpressionError v) (TypeEnv t v)

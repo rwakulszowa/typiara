@@ -64,6 +64,11 @@ spec =
             , ('b', "Nil")
             , ('c', "Nil")
             ]
+    -- (a -> a) -> a
+    let fix =
+          te
+            (Node 'f' [Node 'g' [leaf 'a', leaf 'a'], leaf 'a'])
+            [('f', "F"), ('g', "F"), ('a', "Nil")]
     describe "apply" $ do
       it "id . id" $
           -- Validate that links are not lost in the process.
@@ -79,3 +84,7 @@ spec =
         (compose `apply` [inc, head, seq]) `shouldBe` Right int
       it "(cons . inc) $ int" $
         (compose `apply` [cons, inc, int]) `shouldBe` Right seq
+      it "fix $ inc" $ (fix `apply` [inc]) `shouldBe` Right int
+      it "fix $ head" $
+        (fix `apply` [head]) `shouldBe`
+        (Left . UnifyEnvError . Cycle) ["T.Seq", "T.Seq", "F", "F"]

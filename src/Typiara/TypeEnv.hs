@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveTraversable, DeriveDataTypeable #-}
+{-# LANGUAGE DeriveTraversable, DeriveDataTypeable,
+  FlexibleContexts #-}
 
 module Typiara.TypeEnv where
 
@@ -81,19 +82,16 @@ recompose tv = Fix (Indexed Root (go Root))
 -- | Traverse the structure from the root, aggregating path seen so far.
 -- Bail upon finding the same node id twice in one path.
 -- TODO: rewrite / provide an alternative in terms of `recompose`
--- TODO: update to handle LazyTypeEnv
-findCycles ::
-     (Foldable t, Ord v, Eq v) => TypeVarMap t v -> Maybe [RootOrNotRoot v]
-findCycles tv =
-  case go [] Root of
+findCycles :: (Foldable t, Ord v, Eq v) => v -> Map.Map v (t v) -> Maybe [v]
+findCycles r m =
+  case go [] r of
     Left cycle -> Just cycle
     Right () -> Nothing
   where
-    get' = (tv Map.!)
+    get' = (m Map.!)
     go path v
       | v `elem` path = Left (v : path)
-      | otherwise =
-        () <$ sequence ([go (v : path) (NotRoot vc) | vc <- toList (get' v)])
+      | otherwise = () <$ sequence ([go (v : path) vc | vc <- toList (get' v)])
 
 -- | Map `a`s to `b`s.
 -- `b` *must* generate unique values on each `succ` call.
@@ -251,6 +249,7 @@ instance (Ord v, Foldable t, Tagged t v) => Eq (TypeEnv t v) where
 data UnifyEnvError v
   = KeyNotFound (RootOrNotRoot v)
   | UnifyError UnifyError
+  | Cycle [String]
   deriving (Eq, Show)
 
 -- | Single element instance.
@@ -276,7 +275,14 @@ getR t (NotRoot k) = get t k
 -- `TypeEnv`s are merged, e.g. when we know from one source that a type is both
 -- `a -> a -> a` and `Num -> b`.
 unifyEnv ::
-     (Typ t, Functor t, Foldable t, Ord v, Enum v, Data v)
+     ( Typ t
+     , Functor t
+     , Foldable t
+     , Ord v
+     , Enum v
+     , Data v
+     , Tagged t (RootOrNotRoot v)
+     )
   => RootOrNotRoot v
   -> TypeEnv t v
   -> TypeEnv t v
@@ -304,10 +310,10 @@ unifyEnv leftIdToMerge (TypeEnv a) (TypeEnv b) =
         case a of
           (Left Root) -> Root
           x -> NotRoot (mapping Map.! x)
-   in reconcile <$>
-      unifyVars
+   in unifyVars
         (lazyTypeEnv refreshed)
-        (maptv (Left leftIdToMerge), maptv (Right Root))
+        (maptv (Left leftIdToMerge), maptv (Right Root)) >>=
+      reconcile
   where
     annotateMap fk fv m =
       Maybe.fromJust (fmap (fmap fv) <$> Utils.mapKeysRejectConflicts fk m)
@@ -362,15 +368,18 @@ link src dst (LazyTypeEnv lte) = LazyTypeEnv (Map.alter f src lte)
 
 -- | Follow a link until hitting the destination (non-link).
 -- Replaces chains, such as `a -> b -> c` with a key of `c`.
--- NOTE: may hang on cycles. Detect and reject cycles here.
 follow :: (Ord v) => LazyTypeEnv t v -> Link v -> RootOrNotRoot v
-follow lte@(LazyTypeEnv m) (Link v) =
-  case m Map.!? v of
-    (Just (Left dst)) -> follow lte dst
-    -- ^ The destination is also a link. Use it directly.
-    (Just (Right _)) -> v
-    -- ^ The destination is not a link. Nothing to simplify here.
-    Nothing -> error "Orphaned link"
+follow (LazyTypeEnv m) = go mempty
+  where
+    go seen (Link v)
+      | v `elem` seen = error "Follow.Cycle"
+    go seen (Link v) =
+      case m Map.!? v of
+        (Just (Left dst)) -> go (v : seen) dst
+            -- ^ The destination is also a link. Use it directly.
+        (Just (Right _)) -> v
+            -- ^ The destination is not a link. Nothing to simplify here.
+        Nothing -> error "Orphaned link"
 
 replace a b v =
   if v == a
@@ -383,7 +392,10 @@ substitute :: (Functor f, Ord a) => a -> a -> Map.Map a (f a) -> Map.Map a (f a)
 substitute a b = fmap (fmap (replace a b))
 
 -- | Replace references to `Link`s with direct pointers to destinations.
-reconcile :: (Functor t, Foldable t, Ord v) => LazyTypeEnv t v -> TypeEnv t v
+reconcile ::
+     (Functor t, Foldable t, Ord v, Tagged t (RootOrNotRoot v))
+  => LazyTypeEnv t v
+  -> Either (UnifyEnvError v) (TypeEnv t v)
 reconcile (LazyTypeEnv lte) =
   let (links, nonLinks) = partitionEitherMap lte
       directLinks = (follow (LazyTypeEnv lte) <$> links)
@@ -399,11 +411,7 @@ reconcile (LazyTypeEnv lte) =
           else let newRoot = directLinks Map.! Root
                 in moveKey newRoot Root . substitute newRoot Root $ nonLinks'
       -- ^ Root is guaranteed to be present in the non-link map.
-      -- TODO: find cycles
-      unRooted = fmap unwrapR <$> hoistedNonLinks
-      -- ^ Unwrap values. If any of them contained a `Root` value, it would've
-      -- been detected as a cycle.
-   in clean (TypeEnv unRooted)
+   in clean . TypeEnv . unRoot <$> unCycle hoistedNonLinks
   where
     partitionEitherMap m =
       let (ls, rs) = Map.partition isLeft m
@@ -415,6 +423,13 @@ reconcile (LazyTypeEnv lte) =
     moveKey k k' = Map.mapKeysWith reject (replace k k')
       where
         reject _ _ = error "reject"
+    unCycle m =
+      case findCycles Root m of
+        (Just cycle) -> (Left . Cycle) (tag . (m Map.!) <$> cycle)
+        Nothing -> Right m
+    unRoot m = fmap unwrapR <$> m
+    -- ^ Unwrap values. If any of them contained a `Root` value, it would've
+    -- been detected as a cycle.
 
 -- | Unify two variables in a given environment.
 unifyVars ::

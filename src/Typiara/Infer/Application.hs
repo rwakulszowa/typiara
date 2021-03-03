@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Typiara.Infer.Application
   ( Application
   , inferApplication
@@ -9,6 +11,7 @@ import Data.Foldable (foldlM)
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.List.NonEmpty (NonEmpty((:|)))
 
+import Typiara.Data.Tagged (Tagged)
 import Typiara.Typ (Typ)
 import Typiara.TypeEnv
   ( RootOrNotRoot(..)
@@ -38,7 +41,14 @@ type Application a = NonEmpty.NonEmpty a
 -- In other words, this is more of an implementation details of `Expression`.
 -- See `inferExpression` for a more user friendly interface.
 inferApplication ::
-     (Typ t, Foldable t, Functor t, Ord v, Enum v, Data v)
+     ( Typ t
+     , Foldable t
+     , Functor t
+     , Ord v
+     , Enum v
+     , Data v
+     , Tagged t (RootOrNotRoot v)
+     )
   => Application (TypeEnv t v)
   -> Either (UnifyEnvError v) (TypeEnv t v)
 inferApplication (x NonEmpty.:| []) = Right x
