@@ -1,0 +1,7 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "typiara:lib"
+
+    - path: "./test"
+      component: "typiara:test:typiara-test"
