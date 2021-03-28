@@ -10,30 +10,26 @@ module Typiara.Infer.Expression
   , InferExpressionError(..)
   ) where
 
-import Data.Bifunctor (first)
-import Data.Data (Data)
-import Data.Foldable (foldrM, toList)
-import Data.List.NonEmpty (NonEmpty((:|)))
+import           Data.Bifunctor            (first)
+import           Data.Data                 (Data)
+import           Data.Foldable             (foldrM, toList)
+import           Data.List.NonEmpty        (NonEmpty ((:|)))
 
-import qualified Data.List.NonEmpty as NonEmpty
-import qualified Data.Map.Strict as Map
-import qualified Data.Maybe as Maybe
-import qualified Data.Set as Set
+import qualified Data.List.NonEmpty        as NonEmpty
+import qualified Data.Map.Strict           as Map
+import qualified Data.Maybe                as Maybe
+import qualified Data.Set                  as Set
 
-import Typiara.Data.Tagged (Tagged)
-import Typiara.FT (FT(..))
-import Typiara.Infer.Application (Application, decompose, inferApplication)
-import Typiara.Typ (Typ)
-import Typiara.TypeEnv
-  ( RootOrNotRoot(..)
-  , TypeEnv(..)
-  , UnifyEnvError(..)
-  , funT
-  , singleton
-  , unifyEnv
-  )
+import           Typiara.Data.Tagged       (Tagged)
+import           Typiara.FT                (FT (..))
+import           Typiara.Infer.Application (Application, decompose,
+                                            inferApplication)
+import           Typiara.Typ               (Typ)
+import           Typiara.TypeEnv           (RootOrNotRoot (..), TypeEnv (..),
+                                            UnifyEnvError (..), funT, singleton,
+                                            unifyEnv)
 
-import qualified Typiara.Utils as Utils
+import qualified Typiara.Utils             as Utils
 
 newtype Ref =
   Ref String
@@ -53,7 +49,7 @@ ref = Right . Ref
 -- In `x y -> Inc x`, `x y` are args, `Inc x` is the application.
 data Expression =
   Expression
-    { args :: [Arg]
+    { args        :: [Arg]
     -- ^ Left hand side of a function.
     -- May be empty.
     , application :: Application (Either Arg Ref)

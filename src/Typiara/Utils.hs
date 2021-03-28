@@ -2,25 +2,25 @@
 
 module Typiara.Utils where
 
-import qualified Data.List.NonEmpty as NonEmpty
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
-import qualified Data.Tree as Tree
+import qualified Data.List.NonEmpty       as NonEmpty
+import qualified Data.Map.Strict          as Map
+import qualified Data.Set                 as Set
+import qualified Data.Tree                as Tree
 
-import Data.Bifunctor (second)
-import Data.List.NonEmpty (NonEmpty(..))
-import Data.Map (Map)
-import Data.Set (Set)
-import Data.Tree (Tree(..))
-import Typiara.Data.LeftOrRight (LeftOrRight)
+import           Data.Bifunctor           (second)
+import           Data.List.NonEmpty       (NonEmpty (..))
+import           Data.Map                 (Map)
+import           Data.Set                 (Set)
+import           Data.Tree                (Tree (..))
+import           Typiara.Data.LeftOrRight (LeftOrRight)
 
-import Control.Monad (foldM)
-import Control.Monad.Zip (mzip)
-import Data.Functor (($>))
-import Data.List (find, sortOn)
-import Data.Maybe (fromJust, maybe)
-import Data.Semigroup ((<>))
-import Data.Traversable (mapAccumL)
+import           Control.Monad            (foldM)
+import           Control.Monad.Zip        (mzip)
+import           Data.Functor             (($>))
+import           Data.List                (find, sortOn)
+import           Data.Maybe               (fromJust, maybe)
+import           Data.Semigroup           ((<>))
+import           Data.Traversable         (mapAccumL)
 
 maybeAt :: [a] -> Int -> Maybe a
 maybeAt list index = snd <$> (find ((== index) . fst) . zip [0 ..] $ list)
@@ -37,7 +37,7 @@ hoistHeads lists =
 
 allStrings = [c : s | s <- "" : allStrings, c <- ['a' .. 'z']]
 
-fromRight (Right x) = x
+fromRight (Right x)  = x
 fromRight (Left err) = error $ show err
 
 fromJustOrError :: String -> Maybe a -> a
@@ -47,7 +47,7 @@ maybeError :: err -> Maybe a -> Either err a
 maybeError err = maybe (Left err) Right
 
 invertMaybe :: Maybe () -> Maybe ()
-invertMaybe Nothing = Just ()
+invertMaybe Nothing   = Just ()
 invertMaybe (Just ()) = Nothing
 
 -- Updates value associated with `key`.
@@ -69,7 +69,7 @@ insertIfNew k v map = do
 tzipWith :: Traversable t => (a -> b -> c) -> [a] -> t b -> Maybe (t c)
 tzipWith f xs = sequenceA . snd . mapAccumL pair xs
   where
-    pair [] y = ([], Nothing)
+    pair [] y     = ([], Nothing)
     pair (x:xs) y = (xs, Just (f x y))
 
 tzip :: Traversable t => [a] -> t b -> Maybe (t (a, b))
@@ -93,7 +93,7 @@ denumerateSequence xs = reverse . snd <$> foldM takeOne (0, []) (sortOn fst xs)
 
 -- Tree traversal.
 atPath :: [Int] -> Tree a -> Maybe (Tree a)
-atPath [] tree = Just tree
+atPath [] tree                  = Just tree
 atPath (p:ps) (Node _ children) = maybeAt children p >>= atPath ps
 
 -- Zip the common part, return the remainder.
@@ -127,7 +127,7 @@ mapKeysRejectConflicts f =
 pop :: (Ord k) => Map k v -> k -> Maybe (v, Map k v)
 pop m k =
   case m Map.!? k of
-    Nothing -> Nothing
+    Nothing  -> Nothing
     (Just v) -> Just (v, k `Map.delete` m)
 
 popN m =
@@ -146,7 +146,7 @@ buildLookupF kv keys =
         (NonEmpty.nonEmpty . Set.elems)
           (Set.fromList (Map.keys kv) `Set.difference` keys)
    in case missingKeys of
-        Nothing -> Right (kv Map.!)
+        Nothing   -> Right (kv Map.!)
         (Just mk) -> Left mk
 
 -- | Replace old values with a fresh set.

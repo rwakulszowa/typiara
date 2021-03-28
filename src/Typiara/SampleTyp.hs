@@ -1,14 +1,17 @@
-{-# LANGUAGE DeriveTraversable, DeriveDataTypeable,
-  MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DeriveTraversable     #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Typiara.SampleTyp
   ( SampleTyp(..)
   ) where
 
-import Data.Data (Data, Typeable, toConstr)
-import Typiara.Data.Tagged (Tagged(..))
-import Typiara.FT (FT(..))
-import Typiara.Typ (Typ(..), UnifyError(..), UnifyResult(..))
+import           Data.Data           (Data, Typeable, toConstr)
+import           Typiara.Data.Tagged (Tagged (..))
+import           Typiara.FT          (FT (..))
+import           Typiara.Typ         (Typ (..), UnifyError (..),
+                                      UnifyResult (..))
 
 -- | Sample implementation.
 data SampleTyp a
@@ -37,7 +40,7 @@ instance (Data a) => Tagged SampleTyp a where
   tag = show . toConstr
   -- TODO: try to reuse the magic `gunfold` function from `Data.Data`.
   fromTag "Bool" [] = Just Bool
-  fromTag "Num" [] = Just Num
-  fromTag "Str" [] = Just Str
+  fromTag "Num" []  = Just Num
+  fromTag "Str" []  = Just Str
   fromTag "Seq" [a] = Just (Seq a)
-  fromTag _ _ = Nothing
+  fromTag _ _       = Nothing

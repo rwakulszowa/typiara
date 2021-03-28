@@ -1,13 +1,13 @@
-{-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE OverloadedLists     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.UniqueItemSourceSpec
   ( spec
   ) where
 
-import Test.Hspec
+import           Test.Hspec
 
-import Typiara.Data.UniqueItemSource
+import           Typiara.Data.UniqueItemSource
 
 spec :: Spec
 spec =

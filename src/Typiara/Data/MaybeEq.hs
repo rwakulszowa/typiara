@@ -1,6 +1,6 @@
 module Typiara.Data.MaybeEq where
 
-import Data.Traversable (mapAccumL)
+import           Data.Traversable (mapAccumL)
 
 -- | Wrapper around `Maybe` that considers two `Nothing` values different.
 -- Falls back to regular `==` implementation in all other cases.
@@ -13,7 +13,7 @@ newtype MaybeEq a =
 
 instance Eq a => Eq (MaybeEq a) where
   (==) (MaybeEq Nothing) (MaybeEq Nothing) = False
-  (==) (MaybeEq x) (MaybeEq y) = x == y
+  (==) (MaybeEq x) (MaybeEq y)             = x == y
 
 -- | `MaybeEq Nothing` values represent unique elements that should never
 -- be considered equal. However, the type doesn't impment `Ord`.
@@ -25,4 +25,4 @@ fillMaybeEq = snd . mapAccumL fillOne 0
   where
     fillOne :: Int -> MaybeEq a -> (Int, Either Int a)
     fillOne state (MaybeEq (Just a)) = (state, Right a)
-    fillOne state (MaybeEq Nothing) = (succ state, Left state)
+    fillOne state (MaybeEq Nothing)  = (succ state, Left state)

@@ -4,8 +4,8 @@ module Typiara.Typ
   , UnifyError(..)
   ) where
 
-import Data.Data (Data)
-import Typiara.FT
+import           Data.Data  (Data)
+import           Typiara.FT
 
 -- | User defined type.
 class Typ t
@@ -19,7 +19,7 @@ class Typ t
 -- to be merged into one.
 data UnifyResult t v =
   UnifyResult
-    { unified :: FT t v
+    { unified         :: FT t v
     , typeVarsToUnify :: [(v, v)]
     }
   deriving (Eq, Show, Ord)

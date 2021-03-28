@@ -1,18 +1,18 @@
+{-# LANGUAGE OverloadedLists     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedLists #-}
 
 module UtilsSpec
   ( spec
   ) where
 
-import Typiara.Utils
+import           Typiara.Utils
 
-import Test.Hspec
+import           Test.Hspec
 
 import qualified Data.Map.Strict as Map
-import qualified Data.Tree as Tree
+import qualified Data.Tree       as Tree
 
-import Data.Tree (Tree(..))
+import           Data.Tree       (Tree (..))
 
 spec :: Spec
 spec = do

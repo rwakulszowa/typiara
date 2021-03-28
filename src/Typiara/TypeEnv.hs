@@ -1,32 +1,34 @@
-{-# LANGUAGE DeriveTraversable, DeriveDataTypeable,
-  FlexibleContexts #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveTraversable  #-}
+{-# LANGUAGE FlexibleContexts   #-}
 
 module Typiara.TypeEnv where
 
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Writer.Strict
-import Control.Monad.Zip (munzip, mzip)
-import Data.Bifunctor (bimap, first, second)
-import Data.Data (Data, Typeable)
-import Data.Either (fromLeft, fromRight, isLeft)
-import Data.Foldable (foldlM, foldrM, toList)
-import Data.Function (on)
-import Data.List (nub)
-import Data.List.NonEmpty (NonEmpty((:|)))
-import qualified Data.List.NonEmpty as NonEmpty
-import qualified Data.Map.Strict as Map
-import qualified Data.Maybe as Maybe
-import qualified Data.Set as Set
-import Data.Traversable (mapAccumL)
-import qualified Data.Tree as Tree
-import Data.Tuple (swap)
-import Text.Read (readMaybe)
+import           Control.Monad.Trans.Class         (lift)
+import           Control.Monad.Trans.Writer.Strict
+import           Control.Monad.Zip                 (munzip, mzip)
+import           Data.Bifunctor                    (bimap, first, second)
+import           Data.Data                         (Data, Typeable)
+import           Data.Either                       (fromLeft, fromRight, isLeft)
+import           Data.Foldable                     (foldlM, foldrM, toList)
+import           Data.Function                     (on)
+import           Data.List                         (nub)
+import           Data.List.NonEmpty                (NonEmpty ((:|)))
+import qualified Data.List.NonEmpty                as NonEmpty
+import qualified Data.Map.Strict                   as Map
+import qualified Data.Maybe                        as Maybe
+import qualified Data.Set                          as Set
+import           Data.Traversable                  (mapAccumL)
+import qualified Data.Tree                         as Tree
+import           Data.Tuple                        (swap)
+import           Text.Read                         (readMaybe)
 
-import Typiara.Data.Tagged (Tagged(..))
-import Typiara.FT (FT(..))
-import Typiara.Fix
-import Typiara.Typ (Typ(..), UnifyError(..), UnifyResult(..))
-import qualified Typiara.Utils as Utils
+import           Typiara.Data.Tagged               (Tagged (..))
+import           Typiara.Fix
+import           Typiara.FT                        (FT (..))
+import           Typiara.Typ                       (Typ (..), UnifyError (..),
+                                                    UnifyResult (..))
+import qualified Typiara.Utils                     as Utils
 
 -- | Type wrapper for identifiers with one special value.
 data RootOrNotRoot a
@@ -37,11 +39,11 @@ data RootOrNotRoot a
 instance (Enum a) => Enum (RootOrNotRoot a) where
   toEnum 0 = Root
   toEnum i = NotRoot (toEnum (i - 1))
-  fromEnum Root = 0
+  fromEnum Root        = 0
   fromEnum (NotRoot a) = fromEnum a + 1
 
 -- | Generic storage for type variables.
--- Most operations are defined on `TypeEnv` directly, which is a wrapper of 
+-- Most operations are defined on `TypeEnv` directly, which is a wrapper of
 -- this type. In some circumstances, `TypeEnv` invariants may be violated -
 -- those scenarios should operate on `TypeVarMap`.
 -- After fixing violations, `TypeEnv` should be reintroduced.
@@ -86,7 +88,7 @@ findCycles :: (Foldable t, Ord v, Eq v) => v -> Map.Map v (t v) -> Maybe [v]
 findCycles r m =
   case go [] r of
     Left cycle -> Just cycle
-    Right () -> Nothing
+    Right ()   -> Nothing
   where
     get' = (m Map.!)
     go path v
@@ -159,7 +161,7 @@ fromTree shape constraints = do
     get v = Utils.maybeError (VarNotFound v) (constraints Map.!? v)
     untag :: (Tagged t a) => String -> [a] -> Either (FromTreeError a) (t a)
     untag t vs = Utils.maybeError (UntagError t vs) (fromTag t vs)
-    rejectRoot Root = Left BadShape
+    rejectRoot Root        = Left BadShape
     rejectRoot (NotRoot a) = Right a
     -- | Iterate the tree, reading items in the process and storing processed items in a list.
     -- The list will be later compressed into a map.
@@ -195,7 +197,7 @@ fromEnumTree shape constraints = do
         f (k, v) =
           case diff Map.!? k of
             (Just k') -> Right (k', v)
-            Nothing -> Left (ShapeConstraintsOutOfSync k)
+            Nothing   -> Left (ShapeConstraintsOutOfSync k)
         reject k _ _ = Left (KeyOverlap k)
 
 data FromEnumTreeError a v
@@ -265,7 +267,7 @@ getRoot t = Utils.fromJustOrError "No root" (unTypeEnv t Map.!? Root)
 get :: (Ord v) => TypeEnv t v -> v -> Maybe (FT t v)
 get t k = unTypeEnv t Map.!? NotRoot k
 
-getR t Root = Just (getRoot t)
+getR t Root        = Just (getRoot t)
 getR t (NotRoot k) = get t k
 
 -- | Merge two instances, injecting an id from one item into the other.
@@ -309,7 +311,7 @@ unifyEnv leftIdToMerge (TypeEnv a) (TypeEnv b) =
       maptv a =
         case a of
           (Left Root) -> Root
-          x -> NotRoot (mapping Map.! x)
+          x           -> NotRoot (mapping Map.! x)
    in unifyVars
         (lazyTypeEnv refreshed)
         (maptv (Left leftIdToMerge), maptv (Right Root)) >>=
@@ -377,9 +379,9 @@ follow (LazyTypeEnv m) = go mempty
       case m Map.!? v of
         (Just (Left dst)) -> go (v : seen) dst
             -- ^ The destination is also a link. Use it directly.
-        (Just (Right _)) -> v
+        (Just (Right _))  -> v
             -- ^ The destination is not a link. Nothing to simplify here.
-        Nothing -> error "Orphaned link"
+        Nothing           -> error "Orphaned link"
 
 replace a b v =
   if v == a
@@ -426,7 +428,7 @@ reconcile (LazyTypeEnv lte) =
     unCycle m =
       case findCycles Root m of
         (Just cycle) -> (Left . Cycle) (tag . (m Map.!) <$> cycle)
-        Nothing -> Right m
+        Nothing      -> Right m
     unRoot m = fmap unwrapR <$> m
     -- ^ Unwrap values. If any of them contained a `Root` value, it would've
     -- been detected as a cycle.
@@ -519,7 +521,7 @@ nthFunNode :: (Ord v) => TypeEnv t v -> Int -> FT t v
 nthFunNode t n = go (getRoot t) n
   where
     get' = Maybe.fromJust . get t
-    go t 0 = t
+    go t 0         = t
     go (F _ ret) n = go (get' ret) (n - 1)
 
 nthArgId t n =

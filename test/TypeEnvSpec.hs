@@ -4,11 +4,11 @@ module TypeEnvSpec
   ( spec
   ) where
 
-import Data.Tree
-import Test.Hspec
-import Typiara.FT
-import Typiara.SampleTyp
-import Typiara.TypeEnv
+import           Data.Tree
+import           Test.Hspec
+import           Typiara.FT
+import           Typiara.SampleTyp
+import           Typiara.TypeEnv
 
 -- | Fix type to avoid ambiguity.
 fixT :: TypeVarMap SampleTyp Int -> TypeVarMap SampleTyp Int

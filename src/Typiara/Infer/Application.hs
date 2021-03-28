@@ -6,23 +6,16 @@ module Typiara.Infer.Application
   , decompose
   ) where
 
-import Data.Data (Data)
-import Data.Foldable (foldlM)
-import qualified Data.List.NonEmpty as NonEmpty
-import Data.List.NonEmpty (NonEmpty((:|)))
+import           Data.Data           (Data)
+import           Data.Foldable       (foldlM)
+import           Data.List.NonEmpty  (NonEmpty ((:|)))
+import qualified Data.List.NonEmpty  as NonEmpty
 
-import Typiara.Data.Tagged (Tagged)
-import Typiara.Typ (Typ)
-import Typiara.TypeEnv
-  ( RootOrNotRoot(..)
-  , TypeEnv
-  , UnifyEnvError
-  , buildFunEnv
-  , clean
-  , nthArgId
-  , popArg
-  , unifyEnv
-  )
+import           Typiara.Data.Tagged (Tagged)
+import           Typiara.Typ         (Typ)
+import           Typiara.TypeEnv     (RootOrNotRoot (..), TypeEnv,
+                                      UnifyEnvError, buildFunEnv, clean,
+                                      nthArgId, popArg, unifyEnv)
 
 -- | Flat application.
 -- The type has no knowledge about the underlying type. It can only traverse

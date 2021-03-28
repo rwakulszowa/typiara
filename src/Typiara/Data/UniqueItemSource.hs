@@ -9,13 +9,13 @@ module Typiara.Data.UniqueItemSource
 
 import qualified Data.Set as Set
 
-import Data.Set (Set)
+import           Data.Set (Set)
 
 -- TODO: add an unsafe, unchecked variant once performance becomes an issue.
 data UniqueItemSource a =
   CheckedUniqueItemSource
     { source :: [a]
-    , seen :: Set a
+    , seen   :: Set a
     }
   deriving (Show, Eq)
 

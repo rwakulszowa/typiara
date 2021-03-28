@@ -1,18 +1,19 @@
-{-# LANGUAGE OverloadedLists, ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedLists     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Infer.ExpressionSpec
   ( spec
   ) where
 
-import Data.List.NonEmpty (NonEmpty(..))
-import Test.Hspec
+import           Data.List.NonEmpty        (NonEmpty (..))
+import           Test.Hspec
 
-import Typiara.FT
-import Typiara.Infer.Application
-import Typiara.Infer.Expression
-import Typiara.SampleTyp
-import Typiara.Typ
-import Typiara.TypeEnv
+import           Typiara.FT
+import           Typiara.Infer.Application
+import           Typiara.Infer.Expression
+import           Typiara.SampleTyp
+import           Typiara.Typ
+import           Typiara.TypeEnv
 
 -- | Fixed type variant to avoid ambiguous inference failures.
 singleton' :: FT SampleTyp Int -> TypeEnv SampleTyp Int
