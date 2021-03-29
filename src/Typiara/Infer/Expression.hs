@@ -73,6 +73,7 @@ inferExpression ::
      , Foldable t
      , Data v
      , Tagged t (RootOrNotRoot v)
+     , Eq (t (RootOrNotRoot v))
      )
   => Map.Map (Either Arg Ref) (TypeEnv t v)
   -> Expression

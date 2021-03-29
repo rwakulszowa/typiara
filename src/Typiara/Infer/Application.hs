@@ -41,6 +41,7 @@ inferApplication ::
      , Enum v
      , Data v
      , Tagged t (RootOrNotRoot v)
+     , Eq (t (RootOrNotRoot v))
      )
   => Application (TypeEnv t v)
   -> Either (UnifyEnvError v) (TypeEnv t v)

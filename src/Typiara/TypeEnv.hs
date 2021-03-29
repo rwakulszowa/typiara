@@ -26,8 +26,9 @@ import           Text.Read                         (readMaybe)
 import           Typiara.Data.Tagged               (Tagged (..))
 import           Typiara.Fix
 import           Typiara.FT                        (FT (..))
-import           Typiara.Typ                       (Typ (..), UnifyError (..),
-                                                    UnifyResult (..))
+import           Typiara.Typ                       (FTUnifyResult (..),
+                                                    Typ (..), UnifyError (..),
+                                                    unifyFT)
 import qualified Typiara.Utils                     as Utils
 
 -- | Type wrapper for identifiers with one special value.
@@ -284,6 +285,7 @@ unifyEnv ::
      , Enum v
      , Data v
      , Tagged t (RootOrNotRoot v)
+     , Eq (t (RootOrNotRoot v))
      )
   => RootOrNotRoot v
   -> TypeEnv t v
@@ -436,7 +438,14 @@ reconcile (LazyTypeEnv lte) =
 
 -- | Unify two variables in a given environment.
 unifyVars ::
-     (Ord v, Enum v, Typ t, Data v, Functor t)
+     ( Ord v
+     , Enum v
+     , Typ t
+     , Data v
+     , Functor t
+     , Tagged t (RootOrNotRoot v)
+     , Eq (t (RootOrNotRoot v))
+     )
   => LazyTypeEnv t v
   -> (RootOrNotRoot v, RootOrNotRoot v)
   -> Either (UnifyEnvError v) (LazyTypeEnv t v)
@@ -466,7 +475,7 @@ unifyVars ti (x, y) = go (follow' x, follow' y)
     go (x, y) = do
       tx <- canonicalize <$> ti `find` x
       ty <- canonicalize <$> ti `find` y
-      (UnifyResult ut vs) <- first UnifyError (tx `unify` ty)
+      (FTUnifyResult ut vs) <- first UnifyError (tx `unifyFT` ty)
       pure ti >>= unifySingleType ut >>= foldUnify vs
       where
         find t k = do

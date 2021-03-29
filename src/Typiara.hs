@@ -35,6 +35,7 @@ apply ::
      , Foldable t
      , Data v
      , Tagged t (RootOrNotRoot v)
+     , Eq (t (RootOrNotRoot v))
      )
   => TypeEnv t v
   -> [TypeEnv t v]

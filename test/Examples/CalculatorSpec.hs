@@ -28,17 +28,8 @@ data CalculatorT a =
   CalcInt
   deriving (Eq, Show, Read, Ord, Functor, Foldable, Traversable, Data, Typeable)
 
--- TODO: all but the first line should be implemented by the library
 instance Typ CalculatorT where
-  unify (T CalcInt) (T CalcInt) = Right (UnifyResult (T CalcInt) [])
-  unify (F a b) (F a' b') =
-    Right (UnifyResult (F a b) [(a, a'), (b, b'), (a, b)])
-  unify Nil a = Right (UnifyResult a [])
-  unify a Nil = unify Nil a
-  unify x y =
-    if x == y
-      then Right (UnifyResult x [])
-      else Left (ConflictingTypes (tag x) (tag y))
+  unify CalcInt CalcInt = Right (UnifyResult CalcInt [])
 
 instance Tagged CalculatorT a where
   tag CalcInt = "CalcInt"
