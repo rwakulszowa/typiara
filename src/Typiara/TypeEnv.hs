@@ -90,7 +90,7 @@ findCycles r m =
     Left cycle -> Just cycle
     Right ()   -> Nothing
   where
-    get' = (m Map.!)
+    get' = Utils.fromJustOrError "findCycles.get'" . (m Map.!?)
     go path v
       | v `elem` path = Left (v : path)
       | otherwise = () <$ sequence ([go (v : path) vc | vc <- toList (get' v)])
@@ -311,7 +311,8 @@ unifyEnv leftIdToMerge (TypeEnv a) (TypeEnv b) =
       maptv a =
         case a of
           (Left Root) -> Root
-          x           -> NotRoot (mapping Map.! x)
+          x ->
+            NotRoot (Utils.fromJustOrError "unifyEnv.maptv" $ mapping Map.!? x)
    in unifyVars
         (lazyTypeEnv refreshed)
         (maptv (Left leftIdToMerge), maptv (Right Root)) >>=

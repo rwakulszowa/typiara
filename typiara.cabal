@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 23702267f535bc7db93fc4e5ba5ac63dce02e9f87c6a8d4af0c1e3ec5727036e
+-- hash: 39b6b3884947c46216efee9a223481ed8a5c092b0cff033180c45cb7e165fd85
 
 name:           typiara
 version:        0.1.0.0
@@ -57,6 +57,7 @@ test-suite typiara-test
   other-modules:
       Data.MaybeEqSpec
       Data.UniqueItemSourceSpec
+      Examples.CalculatorSpec
       Infer.ExpressionSpec
       TypeEnvSpec
       TypiaraSpec

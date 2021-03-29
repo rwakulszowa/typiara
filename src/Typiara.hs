@@ -3,17 +3,28 @@
 -- | Core functionality exported in a user friendly format.
 module Typiara
   ( apply
+  , Typ(..)
+  , FT(..)
+  , UnifyResult(..)
+  , UnifyError(..)
+  , Tagged(..)
+  , fromEnumTree
+  , fromTree
+  , singleton
   ) where
 
 import           Data.Data                (Data)
 import           Data.List.NonEmpty       (NonEmpty (..))
 import           Data.Map.Strict          (fromList)
-import           Typiara.Data.Tagged      (Tagged)
+import           Typiara.Data.Tagged      (Tagged (..))
+import           Typiara.FT               (FT (..))
 import           Typiara.Infer.Expression (Expression (..),
                                            InferExpressionError,
                                            inferExpression, ref)
-import           Typiara.Typ              (Typ)
-import           Typiara.TypeEnv          (RootOrNotRoot, TypeEnv)
+import           Typiara.Typ              (Typ (..), UnifyError (..),
+                                           UnifyResult (..))
+import           Typiara.TypeEnv          (RootOrNotRoot, TypeEnv, fromEnumTree,
+                                           fromTree, singleton)
 
 -- | Apply args to a function in a single bulk operation.
 apply ::
