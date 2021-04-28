@@ -350,13 +350,17 @@ newtype Link a =
 -- Values are containers over `RootOrNotRoot v`, instead of just `v`, because
 -- restrictions on the shape are more lax - even though a value pointing to the
 -- Root will always form a cycle, cycles are allowed in `LazyTypeEnv`.
-newtype LazyTypeEnv t v =
+data LazyTypeEnv t v =
   LazyTypeEnv
     { unLazyTypeEnv :: Map.Map (RootOrNotRoot v) (Either (Link v) (FT t (RootOrNotRoot v)))
+    -- | Largest used variable id. Stored explicitly for efficient insertion.
+    , maxVar :: RootOrNotRoot v
     }
 
-lazyTypeEnv :: (Functor t) => TypeVarMap t v -> LazyTypeEnv t v
-lazyTypeEnv = LazyTypeEnv . fmap (Right . fmap NotRoot)
+lazyTypeEnv :: (Functor t, Ord v) => TypeVarMap t v -> LazyTypeEnv t v
+lazyTypeEnv m =
+  let tvs = Right . fmap NotRoot <$> m
+   in LazyTypeEnv tvs (maximum (Root : Map.keys tvs))
 
 -- | Insert a type under a new id that doesn't occur in the environment yet.
 -- Returns the updated map and the generated id.
@@ -366,10 +370,10 @@ insert ::
   => LazyTypeEnv t v
   -> FT t (RootOrNotRoot v)
   -> (RootOrNotRoot v, LazyTypeEnv t v)
-insert (LazyTypeEnv tv) t =
-  let newVar = succ (maximum (Map.keys tv))
+insert (LazyTypeEnv tv maxVar) t =
+  let newVar = succ maxVar
       tv' = Map.insert newVar (Right t) tv
-   in (newVar, LazyTypeEnv tv')
+   in (newVar, LazyTypeEnv tv' newVar)
 
 -- | Replace value stored under `src` with a link pointing to `dst`.
 -- Error if `src` is not found in the map.
@@ -381,14 +385,14 @@ link ::
   -> RootOrNotRoot v
   -> LazyTypeEnv t v
   -> LazyTypeEnv t v
-link src dst (LazyTypeEnv lte) = LazyTypeEnv (Map.alter f src lte)
+link src dst lte = lte {unLazyTypeEnv = Map.alter f src (unLazyTypeEnv lte)}
   where
     f (Just _) = Just (Left (Link dst))
 
 -- | Follow a link until hitting the destination (non-link).
 -- Replaces chains, such as `a -> b -> c` with a key of `c`.
 follow :: (Ord v) => LazyTypeEnv t v -> Link v -> RootOrNotRoot v
-follow (LazyTypeEnv m) = go mempty
+follow (LazyTypeEnv m _) = go mempty
   where
     go seen (Link v)
       | v `elem` seen = error "Follow.Cycle"
@@ -415,9 +419,9 @@ reconcile ::
      (Functor t, Foldable t, Ord v, Tagged t (RootOrNotRoot v))
   => LazyTypeEnv t v
   -> Either (UnifyEnvError v) (TypeEnv t v)
-reconcile (LazyTypeEnv lte) =
-  let (links, nonLinks) = partitionEitherMap lte
-      directLinks = (follow (LazyTypeEnv lte) <$> links)
+reconcile lte@(LazyTypeEnv tvs _) =
+  let (links, nonLinks) = partitionEitherMap tvs
+      directLinks = (follow lte <$> links)
       -- ^ All links point directly to their final target.
       nonLinks' = fmap (applyDiff directLinks) <$> nonLinks
       -- ^ All values pointing to links are replaced with their destinations.
