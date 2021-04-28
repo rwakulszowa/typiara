@@ -271,6 +271,20 @@ get t k = unTypeEnv t Map.!? NotRoot k
 getR t Root        = Just (getRoot t)
 getR t (NotRoot k) = get t k
 
+-- | Lower bound of the type's arity.
+-- Note, that if the return type is generic enough, arity may grow.
+arity :: (Ord v) => TypeEnv t v -> Int
+arity = length . outputs
+
+-- | Traverse the tree, returning consecutive return values.
+-- Breaks on the first non-F node.
+outputs :: (Ord v) => TypeEnv t v -> [FT t v]
+outputs t = go $ getRoot t
+  where
+    get' = Maybe.fromJust . get t
+    go n@(F _ ret) = n : go (get' ret)
+    go _           = []
+
 -- | Merge two instances, injecting an id from one item into the other.
 -- Left root is left intact.
 --
@@ -528,11 +542,7 @@ funT' tA tB =
 -- | Traverse the tree, returning n'th return node.
 -- Will crash if `arity < n`.
 nthFunNode :: (Ord v) => TypeEnv t v -> Int -> FT t v
-nthFunNode t n = go (getRoot t) n
-  where
-    get' = Maybe.fromJust . get t
-    go t 0         = t
-    go (F _ ret) n = go (get' ret) (n - 1)
+nthFunNode t n = outputs t !! n
 
 nthArgId t n =
   let (F arg _) = nthFunNode t n
