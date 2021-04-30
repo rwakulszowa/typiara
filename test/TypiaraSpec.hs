@@ -90,6 +90,13 @@ spec =
       it "fix $ head" $
         (fix `apply` [head]) `shouldBe`
         (Left . UnifyEnvError . Cycle) ["T.Seq", "T.Seq", "F", "F"]
+      it "cons . cons $ seq" $
+        -- Validate nested generics inference.
+        (compose `apply` [cons, cons, int]) `shouldBe`
+        Right
+          (te
+             (Node 's' [Node 't' [leaf 'a']])
+             [('s', "T.Seq"), ('t', "T.Seq"), ('a', "T.Num")])
     describe "corner cases" $ do
       it "self merge" $
         -- The function will attempt to merge c with d, where d is already
