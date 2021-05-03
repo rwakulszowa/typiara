@@ -20,7 +20,7 @@ import           Debug.Trace
 
 leaf x = Node x []
 
-te :: Tree Char -> Map Char String -> TypeEnv SampleTyp Char
+te :: Tree Char -> Map Char String -> TypeEnv SampleTyp
 te a = fromRight . fromEnumTree a
 
 spec :: Spec

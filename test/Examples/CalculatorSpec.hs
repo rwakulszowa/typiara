@@ -31,7 +31,7 @@ data CalculatorT a =
 instance Typ CalculatorT where
   unify CalcInt CalcInt = Right (UnifyResult CalcInt [])
 
-instance Tagged CalculatorT a where
+instance Tagged CalculatorT where
   tag CalcInt = "CalcInt"
   fromTag "CalcInt" [] = Just CalcInt
   fromTag _ _          = Nothing
@@ -44,7 +44,7 @@ spec = do
           fromEnumTree
             (Node 'f' [leaf 'a', leaf 'b'])
             [('f', "F"), ('a', "T.CalcInt"), ('b', "T.CalcInt")]
-    let x = singleton (T (CalcInt :: CalculatorT Char))
+    let x = singleton (T CalcInt)
     it "f x" $ do (f `apply` [x]) `shouldBe` Right x
     it "f (f (f x))" $ do
       let ap fun arg = fun `apply` [arg]

@@ -28,10 +28,10 @@ import           Typiara.TypeEnv          (TypeEnv, fromEnumTree, fromTree,
 
 -- | Apply args to a function in a single bulk operation.
 apply ::
-     (Enum v, Ord v, Typ t, Functor t, Foldable t, Data v, Tagged t v, Eq (t v))
-  => TypeEnv t v
-  -> [TypeEnv t v]
-  -> Either (InferExpressionError v) (TypeEnv t v)
+     (Typ t, Functor t, Foldable t, Tagged t, Eq (t Int))
+  => TypeEnv t
+  -> [TypeEnv t]
+  -> Either InferExpressionError (TypeEnv t)
 apply f xs =
   inferExpression (fromList ((f', f) : (xs' `zip` xs))) (applicationExpr f' xs')
   where

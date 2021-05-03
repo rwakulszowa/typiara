@@ -28,7 +28,7 @@ instance Typ SampleTyp where
       then Right (UnifyResult x [])
       else Left (ConflictingTypes (tag x) (tag y))
 
-instance (Data a) => Tagged SampleTyp a where
+instance Tagged SampleTyp where
   tag = show . toConstr
   -- TODO: try to reuse the magic `gunfold` function from `Data.Data`.
   fromTag "Bool" [] = Just Bool

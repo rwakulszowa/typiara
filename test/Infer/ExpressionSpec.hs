@@ -16,7 +16,7 @@ import           Typiara.Typ
 import           Typiara.TypeEnv
 
 -- | Fixed type variant to avoid ambiguous inference failures.
-singleton' :: FT SampleTyp Int -> TypeEnv SampleTyp Int
+singleton' :: FT SampleTyp Int -> TypeEnv SampleTyp
 singleton' = singleton
 
 spec :: Spec
@@ -87,20 +87,20 @@ spec = do
         let ts =
               [ ( ref "f"
                 , TypeEnv
-                    [ ('R', F 'F' 'G')
-                    , ('F', F 'a' 'b')
-                    , ('G', F 'H' 'I')
-                    , ('H', F 'b' 'c')
-                    , ('I', F 'a' 'c')
-                    , ('a', Nil)
-                    , ('b', Nil)
-                    , ('c', Nil)
-                    ]
-                    'R')
-              , ( ref "g"
-                , TypeEnv [('R', F 'x' 'y'), ('x', T Num), ('y', T Bool)] 'R')
-              , ( ref "h"
-                , TypeEnv [('R', F 'x' 'y'), ('x', T Bool), ('y', T Str)] 'R')
+                    { tvs =
+                        [ (99, F 10 11)
+                        , (10, F 0 1)
+                        , (11, F 12 13)
+                        , (12, F 1 2)
+                        , (13, F 0 2)
+                        , (0, Nil)
+                        , (1, Nil)
+                        , (2, Nil)
+                        ]
+                    , root = 99
+                    })
+              , (ref "g", TypeEnv [(2, F 0 1), (0, T Num), (1, T Bool)] 2)
+              , (ref "h", TypeEnv [(2, F 0 1), (0, T Bool), (1, T Str)] 2)
               ]
         let expr =
               Expression

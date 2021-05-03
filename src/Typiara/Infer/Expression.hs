@@ -59,17 +59,17 @@ data Expression =
     }
   deriving (Eq, Show, Ord)
 
-data InferExpressionError v
+data InferExpressionError
   = MissingTypes (NonEmpty.NonEmpty (Either Arg Ref))
-  | UnifyEnvError (UnifyEnvError v)
-  | RebuildError (UnifyEnvError v)
+  | UnifyEnvError UnifyEnvError
+  | RebuildError UnifyEnvError
   deriving (Eq, Show)
 
 inferExpression ::
-     (Enum v, Ord v, Typ t, Functor t, Foldable t, Data v, Tagged t v, Eq (t v))
-  => Map.Map (Either Arg Ref) (TypeEnv t v)
+     (Typ t, Functor t, Foldable t, Tagged t, Eq (t Int))
+  => Map.Map (Either Arg Ref) (TypeEnv t)
   -> Expression
-  -> Either (InferExpressionError v) (TypeEnv t v)
+  -> Either InferExpressionError (TypeEnv t)
 inferExpression types (Expression args application) = do
   getRefT <-
     first

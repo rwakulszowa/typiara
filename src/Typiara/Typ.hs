@@ -17,7 +17,7 @@ import           Typiara.Data.Tagged
 --
 -- `unify` defines how leaf types merge together.
 class Typ t where
-  unify :: (Eq v, Data v) => t v -> t v -> Either UnifyError (UnifyResult t v)
+  unify :: t Int -> t Int -> Either UnifyError (UnifyResult t Int)
 
 unifyEq :: (Typ t, Eq (t a)) => t a -> t a -> Maybe (t a)
 unifyEq x y =

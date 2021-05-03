@@ -24,7 +24,7 @@ data FT t v
   | Nil
   deriving (Eq, Show, Read, Ord, Functor, Foldable, Traversable)
 
-instance (Tagged t v) => Tagged (FT t) v where
+instance (Tagged t) => Tagged (FT t) where
   tag (F _ _) = "F"
   tag (T t)   = "T." ++ tag t
   tag Nil     = "Nil"
@@ -36,10 +36,10 @@ instance (Tagged t v) => Tagged (FT t) v where
 -- | Unify two FT types.
 -- Wrap user defined `unify` implementation with a handler for core types defined in `FT`.
 unifyFT ::
-     (Typ t, Tagged t v, Eq (t v), Eq v, Data v)
-  => FT t v
-  -> FT t v
-  -> Either UnifyError (FTUnifyResult t v)
+     (Typ t, Tagged t, Eq (t Int))
+  => FT t Int
+  -> FT t Int
+  -> Either UnifyError (FTUnifyResult t Int)
 -- FT types.
 -- Nils unify with anything.
 unifyFT Nil a = Right (FTUnifyResult a [])

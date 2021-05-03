@@ -34,9 +34,9 @@ type Application a = NonEmpty.NonEmpty a
 -- In other words, this is more of an implementation details of `Expression`.
 -- See `inferExpression` for a more user friendly interface.
 inferApplication ::
-     (Typ t, Foldable t, Functor t, Ord v, Enum v, Data v, Tagged t v, Eq (t v))
-  => Application (TypeEnv t v)
-  -> Either (UnifyEnvError v) (TypeEnv t v)
+     (Typ t, Foldable t, Functor t, Tagged t, Eq (t Int))
+  => Application (TypeEnv t)
+  -> Either UnifyEnvError (TypeEnv t)
 inferApplication (x NonEmpty.:| []) = Right x
 inferApplication (fun :| args) = do
   let arity = length args
@@ -59,11 +59,7 @@ inferApplication (fun :| args) = do
 -- applying all arguments.
 -- The applied function is not explicitly returned - it is already available
 -- to the caller as `typ`.
-decompose ::
-     (Foldable t, Ord v)
-  => TypeEnv t v
-  -> [b]
-  -> (TypeEnv t v, [(b, TypeEnv t v)])
+decompose :: (Foldable t) => TypeEnv t -> [b] -> (TypeEnv t, [(b, TypeEnv t)])
 decompose typ [] = (typ, [])
 decompose typ (x:xs) =
   let (argT, retT) = popArg typ

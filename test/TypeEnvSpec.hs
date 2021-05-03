@@ -1,10 +1,9 @@
-{-# LANGUAGE OverloadedLists #-}
-
 module TypeEnvSpec
   ( spec
   ) where
 
 import           Data.Map
+import qualified Data.Set          as S
 import           Data.Tree
 import           Test.Hspec
 import           Typiara.FT
@@ -12,8 +11,10 @@ import           Typiara.SampleTyp
 import           Typiara.TypeEnv
 
 -- | Build a TypeEnv. The first item is assumed to be the root.
-te :: [(Int, FT SampleTyp Int)] -> TypeEnv SampleTyp Int
+te :: [(Int, FT SampleTyp Int)] -> TypeEnv SampleTyp
 te tvs = TypeEnv {tvs = fromList tvs, root = fst (head tvs)}
+
+s = S.fromList
 
 spec :: Spec
 spec = do
@@ -36,37 +37,38 @@ spec = do
   describe "fromTree" $ do
     it "singleton" $ do
       let s = Node 0 []
-      let c = [(0, "Nil")]
+      let c = fromList [(0, "Nil")]
       fromTree s c `shouldBe` Right (te [(0, Nil)])
     it "tree" $ do
       let s = Node 0 [Node 1 [], Node 2 [Node 3 []]]
-      let c = [(0, "F"), (1, "Nil"), (2, "T.Seq"), (3, "T.Num")]
+      let c = fromList [(0, "F"), (1, "Nil"), (2, "T.Seq"), (3, "T.Num")]
       fromTree s c `shouldBe`
         Right (te [(0, F 1 2), (1, Nil), (2, T (Seq 3)), (3, T Num)])
     it "missing vars" $ do
       let s = Node 0 [Node 1 []]
-      let c = [(0, "F")]
-      (fromTree s c :: Either (FromTreeError Int) (TypeEnv SampleTyp Int)) `shouldBe`
+      let c = fromList [(0, "F")]
+      (fromTree s c :: Either FromTreeError (TypeEnv SampleTyp)) `shouldBe`
         Left (UntagError "F" [1])
   describe "fromEnumTree" $ do
     it "tree" $ do
       let s = Node 'a' [Node 'b' [], Node 'c' []]
-      let c = [('a', "F"), ('b', "Nil"), ('c', "T.Num")]
+      let c = fromList [('a', "F"), ('b', "Nil"), ('c', "T.Num")]
       fromEnumTree s c `shouldBe` Right (te [(0, F 1 2), (1, Nil), (2, T Num)])
     it "out of sync" $ do
       let s = Node 'x' [Node 'y' []]
-      let c = [('a', "T.Seq")]
-      (fromEnumTree s c :: Either (FromEnumTreeError Char Int) (TypeEnv SampleTyp Int)) `shouldBe`
+      let c = fromList [('a', "T.Seq")]
+      (fromEnumTree s c :: Either (FromEnumTreeError Char ) (TypeEnv SampleTyp)) `shouldBe`
         Left (ShapeConstraintsOutOfSync 'a')
   describe "decompose" $ do
     it "tree" $ do
       let x = te [(0, F 1 2), (1, Nil), (2, T Num)]
       decompose x `shouldBe`
-        (Node 0 [Node 1 [], Node 2 []], [(0, "F"), (1, "Nil"), (2, "T.Num")])
+        ( Node 0 [Node 1 [], Node 2 []]
+        , fromList [(0, "F"), (1, "Nil"), (2, "T.Num")])
     it "tree with links" $ do
       let x = te [(0, F 1 1), (1, Nil)]
       decompose x `shouldBe`
-        (Node 0 [Node 1 [], Node 1 []], [(0, "F"), (1, "Nil")])
+        (Node 0 [Node 1 [], Node 1 []], fromList [(0, "F"), (1, "Nil")])
   describe "refreshTypeEnv" $ do
     it "tree" $
       -- Regular `==` comparison ignores ids. Support it by directly comparing
@@ -75,25 +77,25 @@ spec = do
       let x = te [(0, F 5 3), (5, Nil), (3, T Num)]
       let freshX = refreshTypeEnv x
       let y = te [(0, F 2 1), (2, Nil), (1, T Num)]
-      (freshX, allVars (tvs freshX)) `shouldBe` (y, [0, 1, 2])
+      (freshX, allVars (tvs freshX)) `shouldBe` (y, s [0, 1, 2])
   describe "findCycles" $ do
     it "singleton" $
       -- TODO: move to a separate spec file
      do
-      let m = [('a', "")]
-      findCycles 'a' m `shouldBe` Nothing
+      let m = fromList [(0, [])]
+      findCycles 0 m `shouldBe` Nothing
     it "tree" $ do
-      let m = [('a', "bb"), ('b', "")]
-      findCycles 'a' m `shouldBe` Nothing
+      let m = fromList [(0, [1, 1]), (1, [])]
+      findCycles 0 m `shouldBe` Nothing
     it "diamond" $ do
-      let m = [('a', "bc"), ('b', "d"), ('c', "d"), ('d', "")]
-      findCycles 'a' m `shouldBe` Nothing
+      let m = fromList [(0, [1, 2]), (1, [3]), (2, [3]), (3, [])]
+      findCycles 0 m `shouldBe` Nothing
     it "self cycle" $ do
-      let m = [('a', "b"), ('b', "b")]
-      findCycles 'a' m `shouldBe` Just "bba"
+      let m = fromList [(0, [1]), (1, [1])]
+      findCycles 0 m `shouldBe` Just [1, 1, 0]
     it "mutual cycle" $ do
-      let m = [('a', "b"), ('b', "c"), ('c', "b")]
-      findCycles 'a' m `shouldBe` Just "bcba"
+      let m = fromList [(0, [1]), (1, [2]), (2, [1])]
+      findCycles 0 m `shouldBe` Just [1, 2, 1, 0]
   describe "shape" $ do
     it "singleton" $ do
       let x = te [(0, Nil)]
