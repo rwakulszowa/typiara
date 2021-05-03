@@ -4,6 +4,7 @@ module Typiara.Typ
   , FTUnifyResult(..)
   , UnifyError(..)
   , unifyFT
+  , unifyEq
   ) where
 
 import           Data.Data           (Data)
@@ -41,12 +42,8 @@ unifyFT (F a b) (F a' b') = Right (FTUnifyResult (F a b) [(a, a'), (b, b')])
 -- Typ t
 unifyFT (T a) (T b) = wrapResult <$> unify a b
 -- Catchall.
--- to się zawsze wywali, bo x zawsze != y (FT się nie zgadzają).
--- TODO: wynieść do góry, ew. podać jako helper? I tak tutaj nic nie wejdzie, bo (T a) złapie wszystko
-unifyFT x y =
-  if x == y
-    then Right (FTUnifyResult x [])
-    else Left (ConflictingTypes (tag x) (tag y))
+-- Matches only situation where the top level `FT` constructors are different.
+unifyFT x y = Left (ConflictingTypes (tag x) (tag y))
 
 unifyEq x y =
   if x == y

@@ -104,8 +104,7 @@ spec = do
         Node
           (0, "F")
           [Node (1, "Nil") [], Node (2, "T.Seq") [Node (3, "T.Num") []]]
-  describe "unifyEnv" $
-   do
+  describe "unifyEnv" $ do
     it "Nil Nil, 0" $ do
       let x = te [(0, Nil)]
       let y = te [(0, Nil)]
