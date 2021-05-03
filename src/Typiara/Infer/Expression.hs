@@ -25,9 +25,9 @@ import           Typiara.FT                (FT (..))
 import           Typiara.Infer.Application (Application, decompose,
                                             inferApplication)
 import           Typiara.Typ               (Typ)
-import           Typiara.TypeEnv           (RootOrNotRoot (..), TypeEnv (..),
-                                            UnifyEnvError (..), funT, singleton,
-                                            unifyEnv)
+import           Typiara.TypeEnv           (TypeEnv (..), UnifyEnvError (..),
+                                            funT, singleton, unifyEnv,
+                                            unifyEnvR)
 
 import qualified Typiara.Utils             as Utils
 
@@ -66,15 +66,7 @@ data InferExpressionError v
   deriving (Eq, Show)
 
 inferExpression ::
-     ( Enum v
-     , Ord v
-     , Typ t
-     , Functor t
-     , Foldable t
-     , Data v
-     , Tagged t (RootOrNotRoot v)
-     , Eq (t (RootOrNotRoot v))
-     )
+     (Enum v, Ord v, Typ t, Functor t, Foldable t, Data v, Tagged t v, Eq (t v))
   => Map.Map (Either Arg Ref) (TypeEnv t v)
   -> Expression
   -> Either (InferExpressionError v) (TypeEnv t v)
@@ -92,10 +84,10 @@ inferExpression types (Expression args application) = do
 inferRefApplication getRefT app@(funRef :| argRefs) = do
   funT <- inferApplication (getRefT <$> app)
   let (retT, argTs) = decompose funT argRefs
-    -- ^ Get a type for every ref.
+    -- Get a type for every ref.
     -- If the same ref is used many times, it will appear multiple times.
   unifiedRefTs <-
-    Utils.mapFromListWithKeyM (\_ -> unifyEnv Root) ((funRef, funT) : argTs)
+    Utils.mapFromListWithKeyM (const unifyEnvR) ((funRef, funT) : argTs)
   return (retT, unifiedRefTs)
 
 -- | Given a return type and types of arguments, rebuild a function args -> ret.
@@ -108,4 +100,4 @@ rebuildExpr args ret = foldrM f ret args
       merge' retV ret
     argV = toEnum 0
     retV = succ argV
-    merge' v t baseT = unifyEnv (NotRoot v) baseT t
+    merge' v t baseT = unifyEnv v baseT t

@@ -13,9 +13,9 @@ import qualified Data.List.NonEmpty  as NonEmpty
 
 import           Typiara.Data.Tagged (Tagged)
 import           Typiara.Typ         (Typ)
-import           Typiara.TypeEnv     (RootOrNotRoot (..), TypeEnv,
-                                      UnifyEnvError, buildFunEnv, clean,
-                                      nthArgId, popArg, unifyEnv)
+import           Typiara.TypeEnv     (TypeEnv (root), UnifyEnvError,
+                                      buildFunEnv, clean, nthArgId, popArg,
+                                      unifyEnv, unifyEnvR)
 
 -- | Flat application.
 -- The type has no knowledge about the underlying type. It can only traverse
@@ -34,22 +34,14 @@ type Application a = NonEmpty.NonEmpty a
 -- In other words, this is more of an implementation details of `Expression`.
 -- See `inferExpression` for a more user friendly interface.
 inferApplication ::
-     ( Typ t
-     , Foldable t
-     , Functor t
-     , Ord v
-     , Enum v
-     , Data v
-     , Tagged t (RootOrNotRoot v)
-     , Eq (t (RootOrNotRoot v))
-     )
+     (Typ t, Foldable t, Functor t, Ord v, Enum v, Data v, Tagged t v, Eq (t v))
   => Application (TypeEnv t v)
   -> Either (UnifyEnvError v) (TypeEnv t v)
 inferApplication (x NonEmpty.:| []) = Right x
 inferApplication (fun :| args) = do
   let arity = length args
-  appEnv <- unifyEnv Root fun (buildFunEnv arity)
-  -- ^ Application shape allows us to deduce required arity for the function.
+  appEnv <- unifyEnvR fun (buildFunEnv arity)
+  -- Application shape allows us to deduce required arity for the function.
   let cleanEnv = clean appEnv
   (result, _) <-
     foldlM
@@ -60,8 +52,7 @@ inferApplication (fun :| args) = do
       args
   return (clean result)
   where
-    handleNthApplication accT n argT =
-      unifyEnv (NotRoot (nthArgId accT n)) accT argT
+    handleNthApplication accT n argT = unifyEnv (nthArgId accT n) accT argT
 
 -- | Decompose a type into individual application tokens.
 -- Each arg is bound to n-th argument, while `ret` is the bit remaining after

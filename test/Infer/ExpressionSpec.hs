@@ -30,34 +30,27 @@ spec = do
     describe "fafa" $ do
       it "(Num -> Num) | a" $ do
         let ts =
-              [ (ref "f", TypeEnv [(Root, F 0 0), (NotRoot 0, T Num)])
+              [ (ref "f", TypeEnv {tvs = [(0, F 1 1), (1, T Num)], root = 0})
               , (ref "a", singleton' Nil)
               ]
         let expr = Expression {args = [], application = ref "f" :| [ref "a"]}
         inferExpression ts expr `shouldBe` Right (singleton' (T Num))
       it "a => (Num -> Num) | a" $ do
         let ts =
-              [ (ref "f", TypeEnv [(Root, F 0 0), (NotRoot 0, T Num)])
+              [ (ref "f", TypeEnv {tvs = [(0, F 1 1), (1, T Num)], root = 0})
               , (arg "a", singleton' Nil)
               ]
         let expr =
               Expression {args = [Arg "a"], application = ref "f" :| [arg "a"]}
         inferExpression ts expr `shouldBe`
-          Right
-            (TypeEnv [(Root, F 0 1), (NotRoot 0, T Num), (NotRoot 1, T Num)])
+          Right (TypeEnv {tvs = [(0, F 1 2), (1, T Num), (2, T Num)], root = 0})
       it "f => f | Num" $ do
         let ts = [(arg "f", singleton' Nil), (ref "a", singleton' (T Num))]
         let expr =
               Expression {args = [Arg "f"], application = arg "f" :| [ref "a"]}
         inferExpression ts expr `shouldBe`
           Right
-            (TypeEnv
-               [ (Root, F 0 1)
-               , (NotRoot 0, F 2 3)
-               , (NotRoot 1, Nil)
-               , (NotRoot 2, T Num)
-               , (NotRoot 3, Nil)
-               ])
+            (TypeEnv [(0, F 1 2), (1, F 3 4), (2, Nil), (3, T Num), (4, Nil)] 0)
       it "f a => f | a" $ do
         let ts = [(arg "f", singleton' Nil), (arg "a", singleton' Nil)]
         let expr =
@@ -66,23 +59,25 @@ spec = do
         inferExpression ts expr `shouldBe`
           Right
             (TypeEnv
-               [ (Root, F 0 1)
-               , (NotRoot 0, F 2 3)
-               , (NotRoot 1, F 5 6)
-               , (NotRoot 2, Nil)
-                -- 4 missing to match the exact return value.
+               [ (0, F 1 2)
+               , (1, F 3 4)
+               , (2, F 6 7)
+               , (3, Nil)
+                -- 5 missing to match the exact return value.
                 -- TODO: custom `Eq` implementation, ignoring id values.
-               , (NotRoot 3, Nil)
-               , (NotRoot 5, Nil)
-               , (NotRoot 6, Nil)
-               ])
+               , (4, Nil)
+               , (6, Nil)
+               , (7, Nil)
+               ]
+               0)
     describe "containers" $ do
       it "(Seq a -> a) | (Seq Num)" $ do
         let ts =
               [ ( ref "f"
                 , TypeEnv
-                    [(Root, F 0 1), (NotRoot 0, T (Seq 1)), (NotRoot 1, Nil)])
-              , (ref "a", TypeEnv [(Root, T (Seq 0)), (NotRoot 0, T Num)])
+                    {tvs = [(0, F 1 2), (1, T (Seq 2)), (2, Nil)], root = 0})
+              , ( ref "a"
+                , TypeEnv {tvs = [(0, T (Seq 1)), (1, T Num)], root = 0})
               ]
         let expr = Expression {args = [], application = ref "f" :| [ref "a"]}
         inferExpression ts expr `shouldBe` Right (singleton' (T Num))
@@ -92,27 +87,20 @@ spec = do
         let ts =
               [ ( ref "f"
                 , TypeEnv
-                    [ (Root, F 'F' 'G')
-                    , (NotRoot 'F', F 'a' 'b')
-                    , (NotRoot 'G', F 'H' 'I')
-                    , (NotRoot 'H', F 'b' 'c')
-                    , (NotRoot 'I', F 'a' 'c')
-                    , (NotRoot 'a', Nil)
-                    , (NotRoot 'b', Nil)
-                    , (NotRoot 'c', Nil)
-                    ])
+                    [ ('R', F 'F' 'G')
+                    , ('F', F 'a' 'b')
+                    , ('G', F 'H' 'I')
+                    , ('H', F 'b' 'c')
+                    , ('I', F 'a' 'c')
+                    , ('a', Nil)
+                    , ('b', Nil)
+                    , ('c', Nil)
+                    ]
+                    'R')
               , ( ref "g"
-                , TypeEnv
-                    [ (Root, F 'x' 'y')
-                    , (NotRoot 'x', T Num)
-                    , (NotRoot 'y', T Bool)
-                    ])
+                , TypeEnv [('R', F 'x' 'y'), ('x', T Num), ('y', T Bool)] 'R')
               , ( ref "h"
-                , TypeEnv
-                    [ (Root, F 'x' 'y')
-                    , (NotRoot 'x', T Bool)
-                    , (NotRoot 'y', T Str)
-                    ])
+                , TypeEnv [('R', F 'x' 'y'), ('x', T Bool), ('y', T Str)] 'R')
               ]
         let expr =
               Expression
@@ -120,19 +108,18 @@ spec = do
         inferExpression ts expr `shouldBe`
           Right
             (TypeEnv
-               [ (Root, F (toEnum 4) (toEnum 6))
-               , (NotRoot (toEnum 4), T Num)
-               , (NotRoot (toEnum 6), T Str)
-               ])
+               [ (toEnum 0, F (toEnum 5) (toEnum 7))
+               , (toEnum 5, T Num)
+               , (toEnum 7, T Str)
+               ]
+               (toEnum 0))
     describe "cycles" $
       -- TODO: how does one actually introduce cycles just by applying functions?
      do return ()
     describe "negative" $ do
       it "(Num -> Num) | Str" $ do
         let ts =
-              [ (ref "f", TypeEnv [(Root, F 0 0), (NotRoot 0, T Num)])
-              , (ref "a", singleton' (T Str))
-              ]
+              [(ref "f", funT' (T Num) (T Num)), (ref "a", singleton' (T Str))]
         let expr = Expression {args = [], application = ref "f" :| [ref "a"]}
         inferExpression ts expr `shouldBe`
           Left (UnifyEnvError (UnifyError (ConflictingTypes "Num" "Str")))

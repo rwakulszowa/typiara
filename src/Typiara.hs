@@ -23,20 +23,12 @@ import           Typiara.Infer.Expression (Expression (..),
                                            inferExpression, ref)
 import           Typiara.Typ              (Typ (..), UnifyError (..),
                                            UnifyResult (..))
-import           Typiara.TypeEnv          (RootOrNotRoot, TypeEnv, fromEnumTree,
-                                           fromTree, singleton)
+import           Typiara.TypeEnv          (TypeEnv, fromEnumTree, fromTree,
+                                           singleton)
 
 -- | Apply args to a function in a single bulk operation.
 apply ::
-     ( Enum v
-     , Ord v
-     , Typ t
-     , Functor t
-     , Foldable t
-     , Data v
-     , Tagged t (RootOrNotRoot v)
-     , Eq (t (RootOrNotRoot v))
-     )
+     (Enum v, Ord v, Typ t, Functor t, Foldable t, Data v, Tagged t v, Eq (t v))
   => TypeEnv t v
   -> [TypeEnv t v]
   -> Either (InferExpressionError v) (TypeEnv t v)

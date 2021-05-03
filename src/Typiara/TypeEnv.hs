@@ -1,6 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveTraversable  #-}
-{-# LANGUAGE FlexibleContexts   #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Typiara.TypeEnv where
 
@@ -10,7 +8,8 @@ import           Control.Monad.Zip                 (munzip, mzip)
 import           Data.Bifunctor                    (bimap, first, second)
 import           Data.Data                         (Data, Typeable)
 import           Data.Either                       (fromLeft, fromRight, isLeft)
-import           Data.Foldable                     (foldlM, foldrM, toList)
+import           Data.Foldable                     (find, foldlM, foldrM,
+                                                    toList)
 import           Data.Function                     (on)
 import           Data.List                         (nub)
 import           Data.List.NonEmpty                (NonEmpty ((:|)))
@@ -31,18 +30,6 @@ import           Typiara.Typ                       (FTUnifyResult (..),
                                                     unifyFT)
 import qualified Typiara.Utils                     as Utils
 
--- | Type wrapper for identifiers with one special value.
-data RootOrNotRoot a
-  = Root
-  | NotRoot a
-  deriving (Eq, Show, Ord, Functor, Traversable, Foldable, Data, Typeable)
-
-instance (Enum a) => Enum (RootOrNotRoot a) where
-  toEnum 0 = Root
-  toEnum i = NotRoot (toEnum (i - 1))
-  fromEnum Root        = 0
-  fromEnum (NotRoot a) = fromEnum a + 1
-
 -- | Generic storage for type variables.
 -- Most operations are defined on `TypeEnv` directly, which is a wrapper of
 -- this type. In some circumstances, `TypeEnv` invariants may be violated -
@@ -54,37 +41,10 @@ instance (Enum a) => Enum (RootOrNotRoot a) where
 --
 -- TODO: KVKMap for Maps where values are containers of keys, creating loops.
 -- Generic stuff to work with such objects.
-type TypeVarMap t v = Map.Map (RootOrNotRoot v) (FT t v)
-
-data Indexed i t a =
-  Indexed i (t a)
-  deriving (Functor)
-
--- | Rebuild a tree from the map.
--- NOTE: not really used anywhere (yet?).
---
--- This fuction builds a directed graph from the map representation.
--- Cycle detection can be done by attempting to build a tree from the graph,
--- tracking paths leading to each node. Upon detecting a cycle, the function
--- should return early.
--- The attempt has been abandoned because a simpler solution exists, but the
--- code looks pretty so it's still here.
-recompose ::
-     (Ord v, Functor t)
-  => TypeVarMap t v
-  -> Fix (Indexed (RootOrNotRoot v) (FT t))
-recompose tv = Fix (Indexed Root (go Root))
-  where
-    go k =
-      let node = tv Map.! k
-       in (\k ->
-             let k' = NotRoot k
-              in Fix . Indexed k' . go $ k') <$>
-          node
+type TypeVarMap t v = Map.Map v (FT t v)
 
 -- | Traverse the structure from the root, aggregating path seen so far.
 -- Bail upon finding the same node id twice in one path.
--- TODO: rewrite / provide an alternative in terms of `recompose`
 findCycles :: (Foldable t, Ord v, Eq v) => v -> Map.Map v (t v) -> Maybe [v]
 findCycles r m =
   case go [] r of
@@ -111,7 +71,7 @@ refresh t =
 -- keys should be enough
 allVars :: (Ord a, Foldable t) => TypeVarMap t a -> Set.Set a
 allVars tvs =
-  (Set.fromList . concatMap toList . Map.keys) tvs `mappend`
+  (Set.fromList . Map.keys) tvs `mappend`
   (Set.fromList . concatMap toList . Map.elems) tvs
 
 -- | Note on pseudo instances.
@@ -124,9 +84,8 @@ allVars tvs =
 -- `f` *must not* cause conflicts.
 fmapTVs ::
      (Functor t, Ord a, Ord b) => (a -> b) -> TypeVarMap t a -> TypeVarMap t b
-fmapTVs f tvs = mapValue <$> mapKeysRejectConflicts mapKey tvs
+fmapTVs f tvs = mapValue <$> mapKeysRejectConflicts f tvs
   where
-    mapKey = fmap f
     mapValue = fmap f
     mapKeysRejectConflicts f = Maybe.fromJust . Utils.mapKeysRejectConflicts f
 
@@ -134,15 +93,15 @@ fmapTVs f tvs = mapValue <$> mapKeysRejectConflicts mapKey tvs
 -- Note, that type variable names are local. When merging multiple instances,
 -- make sure to generate new names.
 --
--- Both root and non-root items are stored in the same container.
--- In most use cases, the ability to point to the root item is not required.
--- `get` provides a friendly interface for those scenarios.
+-- Tree traversal always starts at the `root`. It is an error for `root` not to be present in
+-- the map.
 --
--- `Num` == `[(Root, T Num)]`
--- `Bool -> Bool` == `[(Root, F a a), (a, T Bool)]`
-newtype TypeEnv t v =
+-- `Num` == `[(root, T Num)]`
+-- `Bool -> Bool` == `[(root, F a a), (a, T Bool)]`
+data TypeEnv t v =
   TypeEnv
-    { unTypeEnv :: TypeVarMap t v
+    { tvs  :: TypeVarMap t v
+    , root :: v
     }
   deriving (Show, Ord)
 
@@ -152,18 +111,20 @@ newtype TypeEnv t v =
 -- `Num -> Num` == `(f [a, a], [(f, F), (a, Num)])`
 fromTree ::
      (Ord v, Tagged t v, Enum v)
-  => Tree.Tree (RootOrNotRoot v)
-  -> Map.Map (RootOrNotRoot v) String
+  => Tree.Tree v
+  -> Map.Map v String
   -> Either (FromTreeError v) (TypeEnv t v)
 fromTree shape constraints = do
   ((), s) <- runWriterT (go shape)
-  return (TypeEnv (Map.fromList s))
+  return (TypeEnv (Map.fromList s) root)
   where
+    root = Tree.rootLabel shape
     get v = Utils.maybeError (VarNotFound v) (constraints Map.!? v)
     untag :: (Tagged t a) => String -> [a] -> Either (FromTreeError a) (t a)
     untag t vs = Utils.maybeError (UntagError t vs) (fromTag t vs)
-    rejectRoot Root        = Left BadShape
-    rejectRoot (NotRoot a) = Right a
+    rejectRoot r
+      | r == root = Left BadShape
+    rejectRoot a = Right a
     -- | Iterate the tree, reading items in the process and storing processed items in a list.
     -- The list will be later compressed into a map.
     go (Tree.Node v vs) = do
@@ -174,7 +135,7 @@ fromTree shape constraints = do
       mapM_ go vs
 
 data FromTreeError a
-  = VarNotFound (RootOrNotRoot a)
+  = VarNotFound a
   | UntagError String [a]
   | BadShape
   -- ^ Thrown if `Root` appears in a non-root position.
@@ -188,7 +149,7 @@ fromEnumTree ::
   -> Map.Map a String
   -> Either (FromEnumTreeError a v) (TypeEnv t v)
 fromEnumTree shape constraints = do
-  let (diff, shape') = Utils.refresh [Root ..] shape
+  let (diff, shape') = Utils.refresh [toEnum 0 ..] shape
   constraints' <- updateKeys diff constraints
   first FromTreeErr (fromTree shape' constraints')
   where
@@ -202,7 +163,7 @@ fromEnumTree shape constraints = do
         reject k _ _ = Left (KeyOverlap k)
 
 data FromEnumTreeError a v
-  = KeyOverlap (RootOrNotRoot v)
+  = KeyOverlap v
   -- ^ Happens only on bad implementations of `Enum`.
   | ShapeConstraintsOutOfSync a
   | FromTreeErr (FromTreeError v)
@@ -229,47 +190,49 @@ decompose = stripTags . refresh' . shape
 
 refreshTypeEnv ::
      (Functor t, Foldable t, Ord v, Enum v) => TypeEnv t v -> TypeEnv t v
-refreshTypeEnv = TypeEnv . snd . refresh . unTypeEnv
+refreshTypeEnv (TypeEnv tvs r) =
+  let (diff, tvs') = refresh tvs
+   in TypeEnv {tvs = tvs', root = diff Map.! r}
 
 refreshVs zero = uncurry mzip . first (snd . Utils.refresh [zero ..]) . munzip
 
 -- | Rebuild a tree.
 -- Conversion is lossless - the tree contains information about shape, links
 -- and constraints.
-shape ::
-     (Ord v, Foldable t, Tagged t v)
-  => TypeEnv t v
-  -> Tree.Tree (RootOrNotRoot v, String)
-shape te = Tree.unfoldTree f Root
+shape :: (Ord v, Foldable t, Tagged t v) => TypeEnv t v -> Tree.Tree (v, String)
+shape te = Tree.unfoldTree f (root te)
   where
     f v =
       let n = Maybe.fromJust (getR te v)
-       in ((v, tag n), NotRoot <$> toList n)
+       in ((v, tag n), toList n)
 
 instance (Ord v, Foldable t, Tagged t v) => Eq (TypeEnv t v) where
   (==) = (==) `on` refreshVs 0 . shape
 
 data UnifyEnvError v
-  = KeyNotFound (RootOrNotRoot v)
+  = KeyNotFound v
   | UnifyError UnifyError
   | Cycle [String]
   deriving (Eq, Show)
 
 -- | Single element instance.
-singleton :: FT t v -> TypeEnv t v
-singleton t = TypeEnv (Map.singleton Root t)
+singleton :: (Enum v) => FT t v -> TypeEnv t v
+singleton t = TypeEnv (Map.singleton r t) r
+  where
+    r = toEnum 0
 
 -- | Get the root item.
 -- Crashes on failure. A root item should always exist.
 getRoot :: (Ord v) => TypeEnv t v -> FT t v
-getRoot t = Utils.fromJustOrError "No root" (unTypeEnv t Map.!? Root)
+getRoot t = Utils.fromJustOrError "No root" (tvs t Map.!? root t)
 
 -- | Get a non-root item.
 get :: (Ord v) => TypeEnv t v -> v -> Maybe (FT t v)
-get t k = unTypeEnv t Map.!? NotRoot k
+get t k = tvs t Map.!? k
 
-getR t Root        = Just (getRoot t)
-getR t (NotRoot k) = get t k
+getR t k
+  | k == root t = Just (getRoot t)
+getR t k = get t k
 
 -- | Lower bound of the type's arity.
 -- Note, that if the return type is generic enough, arity may grow.
@@ -292,84 +255,60 @@ outputs t = go $ getRoot t
 -- `TypeEnv`s are merged, e.g. when we know from one source that a type is both
 -- `a -> a -> a` and `Num -> b`.
 unifyEnv ::
-     ( Typ t
-     , Functor t
-     , Foldable t
-     , Ord v
-     , Enum v
-     , Data v
-     , Tagged t (RootOrNotRoot v)
-     , Eq (t (RootOrNotRoot v))
-     )
-  => RootOrNotRoot v
+     (Typ t, Functor t, Foldable t, Ord v, Enum v, Data v, Tagged t v, Eq (t v))
+  => v
   -> TypeEnv t v
   -> TypeEnv t v
   -> Either (UnifyEnvError v) (TypeEnv t v)
-unifyEnv leftIdToMerge (TypeEnv a) (TypeEnv b) =
-  let leftTvs = annotateMap Left (Left . NotRoot) a
-      rightTvs = annotateMap Right (Right . NotRoot) b
-      -- ^ Annotate all items with sides to avoid conflicts.
-      -- Mapping is done on a Map, rather than on a `TypeEnv`, because the
-      -- `Root`s should be annotated as well; Mapping `TypeEnv`s affects
-      -- non-root items only.
-      mergedTVs =
-        let combined = (leftTvs `mappend` rightTvs)
-            (leftRoot, nonRoots) =
-              Maybe.fromJust (combined `Utils.pop` Left Root)
-            -- ^ Pop the left root - it will become the new root.
-            -- Right root becomes a regular item. At this point it is still
-            -- annotated with `Right Root`, but that will disappear after
-            -- refreshing ids.
-         in (Map.mapKeys NotRoot nonRoots `mappend` Map.singleton Root leftRoot)
+unifyEnv leftIdToMerge (TypeEnv a aRoot) (TypeEnv b bRoot) =
+  let leftTvs = annotateMap Left Left a
+      rightTvs = annotateMap Right Right b
+      -- ^ Move items from each side to disjoint domains to avoid conflicts.
+      -- The operation is performed on a map, not a TypeEnv. Root information has
+      -- to be transformed below.
+      mergedTVs = leftTvs <> rightTvs
       (mapping, refreshed) = refresh mergedTVs
-      -- `Left Root` was popped before refreshing, therefore it won't be found
-      -- in `mapping`.
-      maptv a =
-        case a of
-          (Left Root) -> Root
-          x ->
-            NotRoot (Utils.fromJustOrError "unifyEnv.maptv" $ mapping Map.!? x)
+      maptv x = Utils.fromJustOrError "unifyEnv.maptv" $ mapping Map.!? x
    in unifyVars
         (lazyTypeEnv refreshed)
-        (maptv (Left leftIdToMerge), maptv (Right Root)) >>=
-      reconcile
+        (maptv (Left leftIdToMerge), maptv (Right bRoot)) >>=
+      reconcile (maptv (Left aRoot))
   where
     annotateMap fk fv m =
       Maybe.fromJust (fmap (fmap fv) <$> Utils.mapKeysRejectConflicts fk m)
     -- ^ Key mapping won't crash as long as the function is an annotation (adds
     -- new data without dropping any).
 
+unifyEnvR a = unifyEnv (root a) a
+
 -- | Lazily resolved type variable mapping to another variable.
 -- When replacing a type variable `a` with a variable `b` in the whole environment,
 -- one can simply turn `a` into `Link a b`.
 newtype Link a =
-  Link (RootOrNotRoot a)
-  deriving (Show)
+  Link a
+  deriving (Eq, Show)
 
 -- | `TypeVarMap` where values may be links to other keys.
 -- Values are containers over `RootOrNotRoot v`, instead of just `v`, because
 -- restrictions on the shape are more lax - even though a value pointing to the
--- Root will always form a cycle, cycles are allowed in `LazyTypeEnv`.
+-- root will always form a cycle, cycles are allowed in `LazyTypeEnv`.
 data LazyTypeEnv t v =
   LazyTypeEnv
-    { unLazyTypeEnv :: Map.Map (RootOrNotRoot v) (Either (Link v) (FT t (RootOrNotRoot v)))
+    { unLazyTypeEnv :: Map.Map v (Either (Link v) (FT t v))
     -- | Largest used variable id. Stored explicitly for efficient insertion.
-    , maxVar :: RootOrNotRoot v
+    , maxVar        :: v
     }
+  deriving (Eq, Show)
 
 lazyTypeEnv :: (Functor t, Ord v) => TypeVarMap t v -> LazyTypeEnv t v
 lazyTypeEnv m =
-  let tvs = Right . fmap NotRoot <$> m
-   in LazyTypeEnv tvs (maximum (Root : Map.keys tvs))
+  let tvs = Right <$> m
+   in LazyTypeEnv tvs (maximum (Map.keys tvs))
 
 -- | Insert a type under a new id that doesn't occur in the environment yet.
 -- Returns the updated map and the generated id.
 -- TODO: super inefficient; store max counter instead.
-insert ::
-     (Ord v, Enum v)
-  => LazyTypeEnv t v
-  -> FT t (RootOrNotRoot v)
-  -> (RootOrNotRoot v, LazyTypeEnv t v)
+insert :: (Ord v, Enum v) => LazyTypeEnv t v -> FT t v -> (v, LazyTypeEnv t v)
 insert (LazyTypeEnv tv maxVar) t =
   let newVar = succ maxVar
       tv' = Map.insert newVar (Right t) tv
@@ -379,19 +318,14 @@ insert (LazyTypeEnv tv maxVar) t =
 -- Error if `src` is not found in the map.
 -- Value stored under `src` is dropped. The caller is responsible for using any
 -- stored information prior to calling this function.
-link ::
-     (Ord v)
-  => RootOrNotRoot v
-  -> RootOrNotRoot v
-  -> LazyTypeEnv t v
-  -> LazyTypeEnv t v
+link :: (Ord v) => v -> v -> LazyTypeEnv t v -> LazyTypeEnv t v
 link src dst lte = lte {unLazyTypeEnv = Map.alter f src (unLazyTypeEnv lte)}
   where
     f (Just _) = Just (Left (Link dst))
 
 -- | Follow a link until hitting the destination (non-link).
 -- Replaces chains, such as `a -> b -> c` with a key of `c`.
-follow :: (Ord v) => LazyTypeEnv t v -> Link v -> RootOrNotRoot v
+follow :: (Ord v) => LazyTypeEnv t v -> Link v -> v
 follow (LazyTypeEnv m _) = go mempty
   where
     go seen (Link v)
@@ -399,9 +333,9 @@ follow (LazyTypeEnv m _) = go mempty
     go seen (Link v) =
       case m Map.!? v of
         (Just (Left dst)) -> go (v : seen) dst
-            -- ^ The destination is also a link. Use it directly.
+            -- The destination is also a link. Use it directly.
         (Just (Right _))  -> v
-            -- ^ The destination is not a link. Nothing to simplify here.
+            -- The destination is not a link. Nothing to simplify here.
         Nothing           -> error "Orphaned link"
 
 replace a b v =
@@ -416,25 +350,26 @@ substitute a b = fmap (fmap (replace a b))
 
 -- | Replace references to `Link`s with direct pointers to destinations.
 reconcile ::
-     (Functor t, Foldable t, Ord v, Tagged t (RootOrNotRoot v))
-  => LazyTypeEnv t v
+     (Functor t, Foldable t, Ord v, Tagged t v)
+  => v
+  -> LazyTypeEnv t v
   -> Either (UnifyEnvError v) (TypeEnv t v)
-reconcile lte@(LazyTypeEnv tvs _) =
+reconcile root lte@(LazyTypeEnv tvs _) =
   let (links, nonLinks) = partitionEitherMap tvs
       directLinks = (follow lte <$> links)
       -- ^ All links point directly to their final target.
       nonLinks' = fmap (applyDiff directLinks) <$> nonLinks
       -- ^ All values pointing to links are replaced with their destinations.
-      hoistedNonLinks =
-        if Root `Map.member` nonLinks'
-           -- Root is not a link - leave it as it is.
-          then nonLinks'
+      (hoistedNonLinks, hoistedRoot) =
+        if root `Map.member` nonLinks'
+           -- root is not a link - leave it as it is.
+          then (nonLinks', root)
           -- Root must've been partitioned into the link map.
           -- Promote the variable it points to the new root.
-          else let newRoot = directLinks Map.! Root
-                in moveKey newRoot Root . substitute newRoot Root $ nonLinks'
+          else let newRoot = directLinks Map.! root
+                in (nonLinks', newRoot)
       -- ^ Root is guaranteed to be present in the non-link map.
-   in clean . TypeEnv . unRoot <$> unCycle hoistedNonLinks
+   in clean <$> unCycle hoistedNonLinks hoistedRoot
   where
     partitionEitherMap m =
       let (ls, rs) = Map.partition isLeft m
@@ -442,33 +377,19 @@ reconcile lte@(LazyTypeEnv tvs _) =
           , fromRight (error "unexpected") <$> rs)
     -- | Map `k` through `m`, if found. Noop otherwise.
     applyDiff m k = Map.findWithDefault k k m
-    unwrapR (NotRoot a) = a
-    moveKey k k' = Map.mapKeysWith reject (replace k k')
-      where
-        reject _ _ = error "reject"
-    unCycle m =
-      case findCycles Root m of
+    unCycle m r =
+      case findCycles r m of
         (Just cycle) -> (Left . Cycle) (tag . (m Map.!) <$> cycle)
-        Nothing      -> Right m
-    unRoot m = fmap unwrapR <$> m
-    -- ^ Unwrap values. If any of them contained a `Root` value, it would've
-    -- been detected as a cycle.
+        Nothing      -> Right (TypeEnv m r)
 
 -- | Unify two variables in a given environment.
 unifyVars ::
-     ( Ord v
-     , Enum v
-     , Typ t
-     , Data v
-     , Functor t
-     , Tagged t (RootOrNotRoot v)
-     , Eq (t (RootOrNotRoot v))
-     )
+     (Ord v, Enum v, Typ t, Data v, Functor t, Tagged t v, Eq (t v))
   => LazyTypeEnv t v
-  -> (RootOrNotRoot v, RootOrNotRoot v)
+  -> (v, v)
   -> Either (UnifyEnvError v) (LazyTypeEnv t v)
 unifyVars ti (x, y) = go (follow' x, follow' y)
-  -- | Resolve (follow) variables before performing any operations.
+  -- Resolve (follow) variables before performing any operations.
   --
   -- Calculation state is shared between pending `pairs` and `ti`. `pairs` may
   -- contain variables as they were known at the time of a given iteration, but
@@ -500,11 +421,11 @@ unifyVars ti (x, y) = go (follow' x, follow' y)
           found <- Utils.maybeError (KeyNotFound k) (unLazyTypeEnv t Map.!? k)
           case found of
             (Right t) -> return t
-            -- ^ Find the final destination of `k`.
+            -- Find the final destination of `k`.
             -- The link is expected to be shortened by the parent function.
             -- Links are not expected.
         canonicalize = fmap (follow ti . Link)
-            -- ^ Follow children, replace them with their destinations.
+            -- Follow children, replace them with their destinations.
             -- Due to existence of links, there's many ways to represent the same
             -- canonical value. Following links should reduce all of them to the same
             -- object - without a reduction, it's nearly impossible to compare two
@@ -520,9 +441,10 @@ unifyVars ti (x, y) = go (follow' x, follow' y)
 -- | `TypeEnv` representing a chain of functions.
 buildFunEnv :: (Ord v, Enum v) => Int -> TypeEnv t v
 buildFunEnv arity =
-  let (t:ts) = generateFunctionTypes arity (toEnum 0)
-   in TypeEnv (Map.fromList ((Root, snd t) : (first NotRoot <$> ts)))
+  let (t:ts) = generateFunctionTypes arity (succ root)
+   in TypeEnv (Map.fromList ((root, snd t) : ts)) root
   where
+    root = toEnum 0
     generateFunctionTypes 0 v = [(v, Nil)]
     -- ^ The last return value is a `Nil`.
     generateFunctionTypes remaining v =
@@ -534,8 +456,10 @@ buildFunEnv arity =
 
 -- | Build a function `tA -> tB`, where the argument is stored under `a` and
 -- the result under `b`.
-funT (a, tA) (b, tB) =
-  TypeEnv (Map.fromList [(Root, F a b), (NotRoot a, tA), (NotRoot b, tB)])
+funT :: (Enum v, Ord v) => (v, FT t v) -> (v, FT t v) -> TypeEnv t v
+funT (a, tA) (b, tB) = TypeEnv (Map.fromList [(r, F a b), (a, tA), (b, tB)]) r
+  where
+    r = Maybe.fromJust $ find (\x -> x /= a && x /= b) (toEnum <$> [0 ..])
 
 -- | Same as `funT`, except ids are generated automatically.
 funT' tA tB =
@@ -555,24 +479,25 @@ nthArgId t n =
 -- | Decompose the object into standalone arg and fun pieces.
 popArg typeInfo =
   let (F argId retId) = nthFunNode typeInfo 0
-      pick' = pick typeInfo . NotRoot
+      pick' = pick typeInfo
    in (pick' argId, pick' retId)
 
 -- | Pick a minimal subset required to represent a type under `id`.
 -- The `id` node becomes the new root.
 -- When called on `Root`, the function will shake off any redundant type vars.
-pick :: (Foldable t, Ord v) => TypeEnv t v -> RootOrNotRoot v -> TypeEnv t v
+pick :: (Foldable t, Ord v) => TypeEnv t v -> v -> TypeEnv t v
 pick base id =
   let r = get' id
    in TypeEnv
-        ((unTypeEnv base `Map.restrictKeys` Set.fromList (NotRoot <$> dig r)) `mappend`
-         Map.singleton Root r)
+        ((tvs base `Map.restrictKeys` Set.fromList (dig r)) `mappend`
+         Map.singleton id r)
+        id
   where
     dig t =
       let directChildren = nub (toList t)
-          nestedChildren = concatMap (dig . get' . NotRoot) directChildren
+          nestedChildren = concatMap (dig . get') directChildren
        in directChildren ++ nestedChildren
     get' = Utils.fromJustOrError "pick" . getR base
 
 -- | Remove redundant type vars.
-clean t = pick t Root
+clean t = pick t (root t)
