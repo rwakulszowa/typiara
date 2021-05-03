@@ -11,7 +11,7 @@ import           Test.Hspec
 import           Typiara.FT
 import           Typiara.Infer
 import           Typiara.SampleTyp
-import           Typiara.Typ
+import           Typiara.TypDef
 import           Typiara.TypeEnv
 
 -- | Fixed type variant to avoid ambiguous inference failures.

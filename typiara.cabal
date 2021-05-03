@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: aaa968741c114254fb0da15abb3f6e5a5cde9901e7eb3c10e5145c4019e73d23
+-- hash: b490845beaa09d827648e2164173d3670ac1d44ebcc97b5e0ff5c24bf8e90091
 
 name:           typiara
 version:        0.1.0.0
@@ -36,7 +36,7 @@ library
       Typiara.FT
       Typiara.Infer
       Typiara.SampleTyp
-      Typiara.Typ
+      Typiara.TypDef
       Typiara.TypeEnv
       Typiara.Utils
   other-modules:

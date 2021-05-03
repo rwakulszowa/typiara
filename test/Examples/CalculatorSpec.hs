@@ -28,7 +28,7 @@ data CalculatorT a =
   CalcInt
   deriving (Eq, Show, Read, Ord, Functor, Foldable, Traversable, Data, Typeable)
 
-instance Typ CalculatorT where
+instance TypDef CalculatorT where
   unify CalcInt CalcInt = Right (UnifyResult CalcInt [])
 
 instance Tagged CalculatorT where

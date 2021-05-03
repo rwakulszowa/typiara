@@ -22,7 +22,7 @@ import qualified Data.Set            as Set
 
 import           Typiara.Data.Tagged (Tagged)
 import           Typiara.FT          (FT (..))
-import           Typiara.Typ         (Typ)
+import           Typiara.TypDef      (TypDef)
 import           Typiara.TypeEnv     (TypeEnv (..), UnifyEnvError (..),
                                       buildFunEnv, clean, funT, nthArgId,
                                       popArg, singleton, unifyEnv, unifyEnvR)
@@ -64,7 +64,7 @@ data InferExpressionError
   deriving (Eq, Show)
 
 inferExpression ::
-     (Typ t, Functor t, Foldable t, Tagged t, Eq (t Int))
+     (TypDef t, Functor t, Foldable t, Tagged t, Eq (t Int))
   => Map.Map (Either Arg Ref) (TypeEnv t)
   -> Expression
   -> Either InferExpressionError (TypeEnv t)
@@ -120,7 +120,7 @@ type Application a = NonEmpty.NonEmpty a
 -- In other words, this is more of an implementation details of `Expression`.
 -- See `inferExpression` for a more user friendly interface.
 inferApplication ::
-     (Typ t, Foldable t, Functor t, Tagged t, Eq (t Int))
+     (TypDef t, Foldable t, Functor t, Tagged t, Eq (t Int))
   => Application (TypeEnv t)
   -> Either UnifyEnvError (TypeEnv t)
 inferApplication (x NonEmpty.:| []) = Right x

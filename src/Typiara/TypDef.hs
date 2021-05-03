@@ -1,5 +1,5 @@
-module Typiara.Typ
-  ( Typ(..)
+module Typiara.TypDef
+  ( TypDef(..)
   , UnifyResult(..)
   , UnifyError(..)
   , unifyEq
@@ -16,10 +16,10 @@ import           Typiara.Data.Tagged
 -- function types.
 --
 -- `unify` defines how leaf types merge together.
-class Typ t where
+class TypDef t where
   unify :: t Int -> t Int -> Either UnifyError (UnifyResult t Int)
 
-unifyEq :: (Typ t, Eq (t a)) => t a -> t a -> Maybe (t a)
+unifyEq :: (TypDef t, Eq (t a)) => t a -> t a -> Maybe (t a)
 unifyEq x y =
   if x == y
     then Just x

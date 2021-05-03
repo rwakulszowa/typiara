@@ -10,7 +10,7 @@ module Typiara.SampleTyp
 import           Data.Data           (Data, Typeable, toConstr)
 import           Typiara.Data.Tagged (Tagged (..))
 import           Typiara.FT          (FT (..))
-import           Typiara.Typ         (Typ (..), UnifyError (..),
+import           Typiara.TypDef      (TypDef (..), UnifyError (..),
                                       UnifyResult (..))
 
 -- | Sample implementation.
@@ -21,7 +21,7 @@ data SampleTyp a
   | Str
   deriving (Eq, Show, Read, Ord, Functor, Foldable, Traversable, Data, Typeable)
 
-instance Typ SampleTyp where
+instance TypDef SampleTyp where
   unify (Seq a) (Seq b) = Right (UnifyResult (Seq a) [(a, b)])
   unify x y =
     if x == y

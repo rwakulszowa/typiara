@@ -3,7 +3,7 @@
 -- | Core functionality exported in a user friendly format.
 module Typiara
   ( apply
-  , Typ(..)
+  , TypDef(..)
   , FT(..)
   , UnifyResult(..)
   , UnifyError(..)
@@ -20,14 +20,14 @@ import           Typiara.Data.Tagged (Tagged (..))
 import           Typiara.FT          (FT (..))
 import           Typiara.Infer       (Expression (..), InferExpressionError,
                                       inferExpression, ref)
-import           Typiara.Typ         (Typ (..), UnifyError (..),
+import           Typiara.TypDef      (TypDef (..), UnifyError (..),
                                       UnifyResult (..))
 import           Typiara.TypeEnv     (TypeEnv, fromEnumTree, fromTree,
                                       singleton)
 
 -- | Apply args to a function in a single bulk operation.
 apply ::
-     (Typ t, Functor t, Foldable t, Tagged t, Eq (t Int))
+     (TypDef t, Functor t, Foldable t, Tagged t, Eq (t Int))
   => TypeEnv t
   -> [TypeEnv t]
   -> Either InferExpressionError (TypeEnv t)

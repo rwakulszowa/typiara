@@ -27,7 +27,8 @@ import           Typiara.Data.Tagged               (Tagged (..))
 import           Typiara.Fix
 import           Typiara.FT                        (FT (..), FTUnifyResult (..),
                                                     unifyFT)
-import           Typiara.Typ                       (Typ (..), UnifyError (..))
+import           Typiara.TypDef                    (TypDef (..),
+                                                    UnifyError (..))
 import qualified Typiara.Utils                     as Utils
 
 -- | Generic storage for type variables.
@@ -106,7 +107,7 @@ instance (Show (t Int)) => Show (TypeEnv t) where
     "TypeEnv { tvs = " ++ show (tvs te) ++ ", root = " ++ show (root te) ++ " }"
 
 -- TODO: super inefficient. Introduce a separate type repreenting a canonical (refreshed) instance of a given env; only that wrapper should implement Eq, Ord and Hashable
-instance (Typ t, Foldable t, Functor t, Tagged t, Eq (t Int)) =>
+instance (TypDef t, Foldable t, Functor t, Tagged t, Eq (t Int)) =>
          Eq (TypeEnv t) where
   (==) = (==) `on` refreshVs 0 . shape
 
@@ -255,7 +256,7 @@ outputs t = go $ getRoot t
 -- `TypeEnv`s are merged, e.g. when we know from one source that a type is both
 -- `a -> a -> a` and `Num -> b`.
 unifyEnv ::
-     (Typ t, Functor t, Foldable t, Tagged t, Eq (t Int))
+     (TypDef t, Functor t, Foldable t, Tagged t, Eq (t Int))
   => Int
   -> TypeEnv t
   -> TypeEnv t
@@ -388,7 +389,7 @@ reconcile root lte@(LazyTypeEnv tvs _) =
 
 -- | Unify two variables in a given environment.
 unifyVars ::
-     (Typ t, Functor t, Tagged t, Eq (t Int))
+     (TypDef t, Functor t, Tagged t, Eq (t Int))
   => LazyTypeEnv t
   -> (Int, Int)
   -> Either UnifyEnvError (LazyTypeEnv t)

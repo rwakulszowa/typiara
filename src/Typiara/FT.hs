@@ -10,7 +10,7 @@ module Typiara.FT
 
 import           Data.Data           (Data)
 import           Typiara.Data.Tagged (Tagged (..))
-import           Typiara.Typ         (Typ (..), UnifyError (..),
+import           Typiara.TypDef      (TypDef (..), UnifyError (..),
                                       UnifyResult (..))
 
 -- | Function or not-a-function (or an empty type).
@@ -36,7 +36,7 @@ instance (Tagged t) => Tagged (FT t) where
 -- | Unify two FT types.
 -- Wrap user defined `unify` implementation with a handler for core types defined in `FT`.
 unifyFT ::
-     (Typ t, Tagged t, Eq (t Int))
+     (TypDef t, Tagged t, Eq (t Int))
   => FT t Int
   -> FT t Int
   -> Either UnifyError (FTUnifyResult t Int)
