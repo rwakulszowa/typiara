@@ -6,15 +6,15 @@ module TypiaraSpec
 
 import           Test.Hspec
 
-import           Data.List.NonEmpty       (NonEmpty (..))
-import           Data.Map                 (Map, fromList)
-import           Data.Tree                (Tree (..))
+import           Data.List.NonEmpty (NonEmpty (..))
+import           Data.Map           (Map, fromList)
+import           Data.Tree          (Tree (..))
 
-import           Typiara                  (apply)
-import           Typiara.Infer.Expression
+import           Typiara            (apply)
+import           Typiara.Infer
 import           Typiara.SampleTyp
 import           Typiara.TypeEnv
-import           Typiara.Utils            (fromRight)
+import           Typiara.Utils      (fromRight)
 
 import           Debug.Trace
 

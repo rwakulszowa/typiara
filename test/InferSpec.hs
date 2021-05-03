@@ -1,16 +1,15 @@
 {-# LANGUAGE OverloadedLists     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Infer.ExpressionSpec
+module InferSpec
   ( spec
   ) where
 
-import           Data.List.NonEmpty        (NonEmpty (..))
+import           Data.List.NonEmpty (NonEmpty (..))
 import           Test.Hspec
 
 import           Typiara.FT
-import           Typiara.Infer.Application
-import           Typiara.Infer.Expression
+import           Typiara.Infer
 import           Typiara.SampleTyp
 import           Typiara.Typ
 import           Typiara.TypeEnv

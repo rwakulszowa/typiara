@@ -57,7 +57,7 @@ spec = do
     it "out of sync" $ do
       let s = Node 'x' [Node 'y' []]
       let c = fromList [('a', "T.Seq")]
-      (fromEnumTree s c :: Either (FromEnumTreeError Char ) (TypeEnv SampleTyp)) `shouldBe`
+      (fromEnumTree s c :: Either (FromEnumTreeError Char) (TypeEnv SampleTyp)) `shouldBe`
         Left (ShapeConstraintsOutOfSync 'a')
   describe "decompose" $ do
     it "tree" $ do

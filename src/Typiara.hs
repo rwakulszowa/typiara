@@ -13,18 +13,17 @@ module Typiara
   , singleton
   ) where
 
-import           Data.Data                (Data)
-import           Data.List.NonEmpty       (NonEmpty (..))
-import           Data.Map.Strict          (fromList)
-import           Typiara.Data.Tagged      (Tagged (..))
-import           Typiara.FT               (FT (..))
-import           Typiara.Infer.Expression (Expression (..),
-                                           InferExpressionError,
-                                           inferExpression, ref)
-import           Typiara.Typ              (Typ (..), UnifyError (..),
-                                           UnifyResult (..))
-import           Typiara.TypeEnv          (TypeEnv, fromEnumTree, fromTree,
-                                           singleton)
+import           Data.Data           (Data)
+import           Data.List.NonEmpty  (NonEmpty (..))
+import           Data.Map.Strict     (fromList)
+import           Typiara.Data.Tagged (Tagged (..))
+import           Typiara.FT          (FT (..))
+import           Typiara.Infer       (Expression (..), InferExpressionError,
+                                      inferExpression, ref)
+import           Typiara.Typ         (Typ (..), UnifyError (..),
+                                      UnifyResult (..))
+import           Typiara.TypeEnv     (TypeEnv, fromEnumTree, fromTree,
+                                      singleton)
 
 -- | Apply args to a function in a single bulk operation.
 apply ::

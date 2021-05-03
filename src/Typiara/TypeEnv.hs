@@ -151,7 +151,7 @@ fromEnumTree ::
      (Ord a, Enum a, Tagged t)
   => Tree.Tree a
   -> Map.Map a String
-  -> Either (FromEnumTreeError a ) (TypeEnv t)
+  -> Either (FromEnumTreeError a) (TypeEnv t)
 fromEnumTree shape constraints = do
   let (diff, shape') = Utils.refresh [toEnum 0 ..] shape
   constraints' <- updateKeys diff constraints
