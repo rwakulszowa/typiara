@@ -4,9 +4,14 @@
 
 module Typiara.FT
   ( FT(..)
+  , unifyFT
+  , FTUnifyResult(..)
   ) where
 
+import           Data.Data           (Data)
 import           Typiara.Data.Tagged (Tagged (..))
+import           Typiara.Typ         (Typ (..), UnifyError (..),
+                                      UnifyResult (..))
 
 -- | Function or not-a-function (or an empty type).
 -- Functions are special. All other types are provided by the user, but
@@ -27,3 +32,37 @@ instance (Tagged t v) => Tagged (FT t) v where
   fromTag "F" [a, b]      = Just (F a b)
   fromTag ('T':'.':ts) xs = T <$> fromTag ts xs
   fromTag _ _             = Nothing
+
+-- | Unify two FT types.
+-- Wrap user defined `unify` implementation with a handler for core types defined in `FT`.
+unifyFT ::
+     (Typ t, Tagged t v, Eq (t v), Eq v, Data v)
+  => FT t v
+  -> FT t v
+  -> Either UnifyError (FTUnifyResult t v)
+-- FT types.
+-- Nils unify with anything.
+unifyFT Nil a = Right (FTUnifyResult a [])
+unifyFT a Nil = unifyFT Nil a
+-- There is a link on either side. All variables are unified to the same ident, the result is linked.
+unifyFT (F a b) (F a' b')
+  | a == b || a' == b' =
+    Right (FTUnifyResult (F a a) [(a, b), (a, a'), (a, b')])
+-- No links. Propagate pairwise, but do not introduce any links.
+unifyFT (F a b) (F a' b') = Right (FTUnifyResult (F a b) [(a, a'), (b, b')])
+-- Typ t
+unifyFT (T a) (T b) = wrapResult <$> unify a b
+-- Catchall.
+-- Matches only situation where the top level `FT` constructors are different.
+unifyFT x y = Left (ConflictingTypes (tag x) (tag y))
+
+-- | FT compatible wrapper for `UnifyResult`.
+data FTUnifyResult t v =
+  FTUnifyResult
+    { ftUnified         :: FT t v
+    , ftTypeVarsToUnify :: [(v, v)]
+    }
+  deriving (Eq, Show, Ord)
+
+wrapResult (UnifyResult u t) =
+  FTUnifyResult {ftUnified = T u, ftTypeVarsToUnify = t}

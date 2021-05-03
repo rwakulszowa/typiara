@@ -24,10 +24,9 @@ import           Text.Read                         (readMaybe)
 
 import           Typiara.Data.Tagged               (Tagged (..))
 import           Typiara.Fix
-import           Typiara.FT                        (FT (..))
-import           Typiara.Typ                       (FTUnifyResult (..),
-                                                    Typ (..), UnifyError (..),
+import           Typiara.FT                        (FT (..), FTUnifyResult (..),
                                                     unifyFT)
+import           Typiara.Typ                       (Typ (..), UnifyError (..))
 import qualified Typiara.Utils                     as Utils
 
 -- | Generic storage for type variables.
