@@ -13,14 +13,15 @@ import           Data.Tree          (Tree (..))
 import           Typiara            (apply)
 import           Typiara.Infer
 import           Typiara.SampleTyp
-import           Typiara.TypeEnv
+import           Typiara.Typ
+import           Typiara.TypeEnv    (UnifyEnvError (..))
 import           Typiara.Utils      (fromRight)
 
 import           Debug.Trace
 
 leaf x = Node x []
 
-te :: Tree Char -> Map Char String -> TypeEnv SampleTyp
+te :: Tree Char -> Map Char String -> Typ SampleTyp
 te a = fromRight . fromEnumTree a
 
 spec :: Spec

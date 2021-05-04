@@ -106,10 +106,13 @@ instance (Show (t Int)) => Show (TypeEnv t) where
   show te =
     "TypeEnv { tvs = " ++ show (tvs te) ++ ", root = " ++ show (root te) ++ " }"
 
--- TODO: super inefficient. Introduce a separate type repreenting a canonical (refreshed) instance of a given env; only that wrapper should implement Eq, Ord and Hashable
+-- | Direct comparison of raw data.
+-- To compare instances ignoring non-key details (i.e. type var ids), see `Typ`.
 instance (TypDef t, Foldable t, Functor t, Tagged t, Eq (t Int)) =>
          Eq (TypeEnv t) where
-  (==) = (==) `on` refreshVs 0 . shape
+  (==) = (==) `on` unpack
+    where
+      unpack (TypeEnv a b) = (a, b)
 
 -- | Build an instance from shape and constraints.
 -- Rejects out of sync inputs (i.e. such that the shape doesn't match constraint keys).
@@ -181,7 +184,7 @@ decompose ::
   -> (Tree.Tree a, Map.Map a String)
 decompose = stripTags . refresh' . shape
   where
-    refresh' = refreshVs (toEnum 0)
+    refresh' = Utils.refreshVs (toEnum 0)
     stripTags = swap . mapAccumL f Map.empty
       where
         f s (v, tag) =
@@ -193,18 +196,11 @@ decompose = stripTags . refresh' . shape
                   (Just tag') -> error "Tags out of sync"
            in (s', v)
 
-refreshTypeEnv :: (Functor t, Foldable t) => TypeEnv t -> TypeEnv t
-refreshTypeEnv (TypeEnv tvs r) =
-  let (diff, tvs') = refresh tvs
-   in TypeEnv {tvs = tvs', root = diff Map.! r}
-
-refreshVs zero = uncurry mzip . first (snd . Utils.refresh [zero ..]) . munzip
-
 -- | Rebuild a tree.
 -- Conversion is lossless - the tree contains information about shape, links
 -- and constraints.
 shape :: (Foldable t, Tagged t) => TypeEnv t -> Tree.Tree (Int, String)
-shape te = Tree.unfoldTree f (root te)
+shape te = Utils.refreshVs 0 $ Tree.unfoldTree f (root te)
   where
     f v =
       let n = Maybe.fromJust (getR te v)

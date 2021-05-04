@@ -3,7 +3,6 @@ module TypeEnvSpec
   ) where
 
 import           Data.Map
-import qualified Data.Set          as S
 import           Data.Tree
 import           Test.Hspec
 import           Typiara.FT
@@ -14,26 +13,8 @@ import           Typiara.TypeEnv
 te :: [(Int, FT SampleTyp Int)] -> TypeEnv SampleTyp
 te tvs = TypeEnv {tvs = fromList tvs, root = fst (head tvs)}
 
-s = S.fromList
-
 spec :: Spec
 spec = do
-  describe "Eq" $ do
-    it "same" $ do
-      let x = te [(0, F 1 2), (1, T Num), (2, Nil)]
-      x == x `shouldBe` True
-    it "different ids, same content" $ do
-      let x = te [(0, F 1 2), (1, T Num), (2, Nil)]
-      let y = te [(0, F 2 3), (2, T Num), (3, Nil)]
-      x `shouldBe` y
-    it "different shape" $ do
-      let x = te [(0, F 1 2), (1, T Num), (2, T Num)]
-      let y = te [(0, Nil)]
-      x == y `shouldBe` False
-    it "different links, same shape" $ do
-      let x = te [(0, F 1 2), (1, T Num), (2, T Num)]
-      let y = te [(0, F 1 1), (1, T Num)]
-      x == y `shouldBe` False
   describe "fromTree" $ do
     it "singleton" $ do
       let s = Node 0 []
@@ -69,15 +50,6 @@ spec = do
       let x = te [(0, F 1 1), (1, Nil)]
       decompose x `shouldBe`
         (Node 0 [Node 1 [], Node 1 []], fromList [(0, "F"), (1, "Nil")])
-  describe "refreshTypeEnv" $ do
-    it "tree" $
-      -- Regular `==` comparison ignores ids. Support it by directly comparing
-      -- variable names.
-     do
-      let x = te [(0, F 5 3), (5, Nil), (3, T Num)]
-      let freshX = refreshTypeEnv x
-      let y = te [(0, F 2 1), (2, Nil), (1, T Num)]
-      (freshX, allVars (tvs freshX)) `shouldBe` (y, s [0, 1, 2])
   describe "findCycles" $ do
     it "singleton" $
       -- TODO: move to a separate spec file
@@ -110,17 +82,19 @@ spec = do
     it "Nil Nil, 0" $ do
       let x = te [(0, Nil)]
       let y = te [(0, Nil)]
-      unifyEnv 0 x y `shouldBe` Right x
+      (shape <$> unifyEnv 0 x y) `shouldBe` Right (shape x)
     it "(a -> a) Num,  a" $ do
       let x = te [(0, F 1 1), (1, Nil)]
       let y = te [(0, T Num)]
-      unifyEnv 1 x y `shouldBe` Right (te [(0, F 1 1), (1, T Num)])
+      (shape <$> unifyEnv 1 x y) `shouldBe`
+        Right (shape $ te [(0, F 1 1), (1, T Num)])
     it "(x -> y) (a -> a),  - propagates links" $
       -- Validate that links from the right tree are propagated to the left tree.
      do
       let x = te [(0, F 1 2), (1, Nil), (2, T Num)]
       let y = te [(0, F 1 1), (1, Nil)]
-      unifyEnv 0 x y `shouldBe` Right (te [(0, F 1 1), (1, T Num)])
+      (shape <$> unifyEnv 0 x y) `shouldBe`
+        Right (shape $ te [(0, F 1 1), (1, T Num)])
     it "((x -> y) -> (y -> z)) (a -> a),  - propagates links across branches" $
       -- Validate that links from the rigt tree are propagated to the merged node,
       -- as well as the other branch.
@@ -129,8 +103,9 @@ spec = do
             te
               [(0, F 1 2), (1, F 3 4), (2, F 4 5), (3, Nil), (4, Nil), (5, Nil)]
       let y = te [(0, F 1 1), (1, Nil)]
-      unifyEnv 1 x y `shouldBe`
-        Right (te [(0, F 1 2), (1, F 3 3), (2, F 3 4), (3, Nil), (4, Nil)])
+      (shape <$> unifyEnv 1 x y) `shouldBe`
+        Right
+          (shape $ te [(0, F 1 2), (1, F 3 3), (2, F 3 4), (3, Nil), (4, Nil)])
     it "tree" $ do
       let x = te [(0, F 1 2), (1, Nil), (2, T (Seq 3)), (3, T Num)]
       shape x `shouldBe`

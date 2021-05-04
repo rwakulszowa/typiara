@@ -9,7 +9,6 @@ module Typiara
   , UnifyError(..)
   , Tagged(..)
   , fromEnumTree
-  , fromTree
   , singleton
   ) where
 
@@ -20,17 +19,16 @@ import           Typiara.Data.Tagged (Tagged (..))
 import           Typiara.FT          (FT (..))
 import           Typiara.Infer       (Expression (..), InferExpressionError,
                                       inferExpression, ref)
+import           Typiara.Typ         (Typ, fromEnumTree, singleton)
 import           Typiara.TypDef      (TypDef (..), UnifyError (..),
                                       UnifyResult (..))
-import           Typiara.TypeEnv     (TypeEnv, fromEnumTree, fromTree,
-                                      singleton)
 
 -- | Apply args to a function in a single bulk operation.
 apply ::
      (TypDef t, Functor t, Foldable t, Tagged t, Eq (t Int))
-  => TypeEnv t
-  -> [TypeEnv t]
-  -> Either InferExpressionError (TypeEnv t)
+  => Typ t
+  -> [Typ t]
+  -> Either InferExpressionError (Typ t)
 apply f xs =
   inferExpression (fromList ((f', f) : (xs' `zip` xs))) (applicationExpr f' xs')
   where

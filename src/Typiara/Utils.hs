@@ -7,7 +7,7 @@ import qualified Data.Map.Strict          as Map
 import qualified Data.Set                 as Set
 import qualified Data.Tree                as Tree
 
-import           Data.Bifunctor           (second)
+import           Data.Bifunctor           (first, second)
 import           Data.List.NonEmpty       (NonEmpty (..))
 import           Data.Map                 (Map)
 import           Data.Set                 (Set)
@@ -15,7 +15,7 @@ import           Data.Tree                (Tree (..))
 import           Typiara.Data.LeftOrRight (LeftOrRight)
 
 import           Control.Monad            (foldM)
-import           Control.Monad.Zip        (mzip)
+import           Control.Monad.Zip        (munzip, mzip)
 import           Data.Functor             (($>))
 import           Data.List                (find, sortOn)
 import           Data.Maybe               (fromJust, maybe)
@@ -162,3 +162,5 @@ refresh bs t =
         Nothing ->
           let (b:bs') = bs
            in ((Map.insert a b seen, bs'), b)
+
+refreshVs zero = uncurry mzip . first (snd . refresh [zero ..]) . munzip

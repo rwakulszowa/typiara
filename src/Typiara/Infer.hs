@@ -22,6 +22,7 @@ import qualified Data.Set            as Set
 
 import           Typiara.Data.Tagged (Tagged)
 import           Typiara.FT          (FT (..))
+import qualified Typiara.Typ         as T
 import           Typiara.TypDef      (TypDef)
 import           Typiara.TypeEnv     (TypeEnv (..), UnifyEnvError (..),
                                       buildFunEnv, clean, funT, nthArgId,
@@ -61,23 +62,31 @@ data InferExpressionError
   = MissingTypes (NonEmpty.NonEmpty (Either Arg Ref))
   | UnifyEnvError UnifyEnvError
   | RebuildError UnifyEnvError
+  | TypErr T.TypError
   deriving (Eq, Show)
 
+-- | Infer return type of a single expression.
+-- Types are provided in the user friendly form of `Typ`.
+-- Internal calculations are performed on a more efficient `TypeEnv`.
+-- When processing a large expression, it is more efficient to build a large `Expression`
+-- and infer once, rather than inferring step by step.
 inferExpression ::
      (TypDef t, Functor t, Foldable t, Tagged t, Eq (t Int))
-  => Map.Map (Either Arg Ref) (TypeEnv t)
+  => Map.Map (Either Arg Ref) (T.Typ t)
   -> Expression
-  -> Either InferExpressionError (TypeEnv t)
+  -> Either InferExpressionError (T.Typ t)
 inferExpression types (Expression args application) = do
   getRefT <-
-    first
-      MissingTypes
-      (Utils.buildLookupF types (Set.fromList . toList $ application))
+    first MissingTypes (Utils.buildLookupF typeEnvs (dedup application))
   (retT, inferredRefTs) <-
     first UnifyEnvError (inferRefApplication getRefT application)
   let getInferredRefT k =
         Maybe.fromMaybe (singleton Nil) (inferredRefTs Map.!? Left k)
-  first RebuildError (rebuildExpr (getInferredRefT <$> args) retT)
+  retEnv <- first RebuildError (rebuildExpr (getInferredRefT <$> args) retT)
+  first TypErr (T.fromTypeEnv retEnv)
+  where
+    typeEnvs = T.intoTypeEnv <$> types
+    dedup = Set.fromList . toList
 
 inferRefApplication getRefT app@(funRef :| argRefs) = do
   funT <- inferApplication (getRefT <$> app)
