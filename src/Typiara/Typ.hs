@@ -4,18 +4,21 @@
 
 module Typiara.Typ where
 
-import           Control.Monad.Zip (munzip, mzip)
+import           Control.Monad.Zip   (munzip, mzip)
 import           Data.Bifunctor
-import           Data.Foldable     (toList)
+import           Data.Foldable       (toList)
 import           Data.Function
-import qualified Data.Map.Strict   as M
+import qualified Data.Map.Strict     as M
 import           Data.Maybe
-import qualified Data.Set          as S
-import           Data.Traversable  (mapAccumL)
+import qualified Data.Set            as S
+import           Data.Traversable    (mapAccumL)
+import qualified Data.Tree           as T
 import           GHC.Generics
-import           Typiara.FT        (FT (..))
-import qualified Typiara.TypeEnv   as TE
-import qualified Typiara.Utils     as U
+import           Typiara.Data.Tagged (Tagged)
+import           Typiara.FT          (FT (..))
+import           Typiara.TypDef
+import qualified Typiara.TypeEnv     as TE
+import qualified Typiara.Utils       as U
 
 -- | Canonical representation of a TypeEnv.
 -- Contains the same data as TypeEnv, but reduced to a base representation.
@@ -101,3 +104,33 @@ singleton = U.fromRight . fromTypeEnv . TE.singleton
 -- | Function `a -> b`
 fun :: (Functor t, Foldable t) => FT t Int -> FT t Int -> Typ t
 fun a b = Typ [(0, F 1 2), (1, a), (2, b)]
+
+-- | Merge two types together.
+-- This operation tells if there exists a set of types satisfying both types.
+-- `Left` if the two types are incompatible.
+merge ::
+     (Functor t, Foldable t, TypDef t, Tagged t, Eq (t Int))
+  => Typ t
+  -> Typ t
+  -> Either MergeError (Typ t)
+merge x y = fromTypeEnv' <$> TE.unifyEnvR (intoTypeEnv x) (intoTypeEnv y)
+  where
+    fromTypeEnv' =
+      either (\e -> error $ "merge.fromTypeEnv" ++ show e) id . fromTypeEnv
+
+type MergeError = TE.UnifyEnvError
+
+--
+-- | Utils for reading derived properties of an instance.
+--
+decompose ::
+     (Ord a, Enum a, Tagged t, Foldable t)
+  => Typ t
+  -> (T.Tree a, M.Map a String)
+decompose = TE.decompose . intoTypeEnv
+
+outputs :: Typ t -> [FT t Int]
+outputs = TE.outputs . intoTypeEnv
+
+arity :: Typ t -> Int
+arity = length . outputs

@@ -3,8 +3,10 @@
 -- | Core functionality exported in a user friendly format.
 module Typiara
   ( apply
+  , merge
   , TypDef(..)
   , FT(..)
+  , Typ(..)
   , UnifyResult(..)
   , UnifyError(..)
   , Tagged(..)
@@ -19,7 +21,7 @@ import           Typiara.Data.Tagged (Tagged (..))
 import           Typiara.FT          (FT (..))
 import           Typiara.Infer       (Expression (..), InferExpressionError,
                                       inferExpression, ref)
-import           Typiara.Typ         (Typ, fromEnumTree, singleton)
+import           Typiara.Typ         (Typ, fromEnumTree, merge, singleton)
 import           Typiara.TypDef      (TypDef (..), UnifyError (..),
                                       UnifyResult (..))
 
