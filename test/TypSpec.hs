@@ -2,7 +2,7 @@ module TypSpec
   ( spec
   ) where
 
-import           Data.Map
+import           Data.IntMap
 import qualified Data.Set          as S
 import           Data.Tree
 import           Test.Hspec

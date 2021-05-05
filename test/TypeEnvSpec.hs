@@ -2,6 +2,7 @@ module TypeEnvSpec
   ( spec
   ) where
 
+import qualified Data.IntMap       as IM
 import           Data.Map
 import           Data.Tree
 import           Test.Hspec
@@ -11,23 +12,23 @@ import           Typiara.TypeEnv
 
 -- | Build a TypeEnv. The first item is assumed to be the root.
 te :: [(Int, FT SampleTyp Int)] -> TypeEnv SampleTyp
-te tvs = TypeEnv {tvs = fromList tvs, root = fst (head tvs)}
+te tvs = TypeEnv {tvs = IM.fromList tvs, root = fst (head tvs)}
 
 spec :: Spec
 spec = do
   describe "fromTree" $ do
     it "singleton" $ do
       let s = Node 0 []
-      let c = fromList [(0, "Nil")]
+      let c = IM.fromList [(0, "Nil")]
       fromTree s c `shouldBe` Right (te [(0, Nil)])
     it "tree" $ do
       let s = Node 0 [Node 1 [], Node 2 [Node 3 []]]
-      let c = fromList [(0, "F"), (1, "Nil"), (2, "T.Seq"), (3, "T.Num")]
+      let c = IM.fromList [(0, "F"), (1, "Nil"), (2, "T.Seq"), (3, "T.Num")]
       fromTree s c `shouldBe`
         Right (te [(0, F 1 2), (1, Nil), (2, T (Seq 3)), (3, T Num)])
     it "missing vars" $ do
       let s = Node 0 [Node 1 []]
-      let c = fromList [(0, "F")]
+      let c = IM.fromList [(0, "F")]
       (fromTree s c :: Either FromTreeError (TypeEnv SampleTyp)) `shouldBe`
         Left (UntagError "F" [1])
   describe "fromEnumTree" $ do
@@ -54,19 +55,19 @@ spec = do
     it "singleton" $
       -- TODO: move to a separate spec file
      do
-      let m = fromList [(0, [])]
+      let m = IM.fromList [(0, [])]
       findCycles 0 m `shouldBe` Nothing
     it "tree" $ do
-      let m = fromList [(0, [1, 1]), (1, [])]
+      let m = IM.fromList [(0, [1, 1]), (1, [])]
       findCycles 0 m `shouldBe` Nothing
     it "diamond" $ do
-      let m = fromList [(0, [1, 2]), (1, [3]), (2, [3]), (3, [])]
+      let m = IM.fromList [(0, [1, 2]), (1, [3]), (2, [3]), (3, [])]
       findCycles 0 m `shouldBe` Nothing
     it "self cycle" $ do
-      let m = fromList [(0, [1]), (1, [1])]
+      let m = IM.fromList [(0, [1]), (1, [1])]
       findCycles 0 m `shouldBe` Just [1, 1, 0]
     it "mutual cycle" $ do
-      let m = fromList [(0, [1]), (1, [2]), (2, [1])]
+      let m = IM.fromList [(0, [1]), (1, [2]), (2, [1])]
       findCycles 0 m `shouldBe` Just [1, 2, 1, 0]
   describe "shape" $ do
     it "singleton" $ do

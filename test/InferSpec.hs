@@ -5,6 +5,7 @@ module InferSpec
   ( spec
   ) where
 
+import qualified Data.IntMap.Strict as IM
 import           Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict    as M
 import           Test.Hspec
@@ -24,7 +25,7 @@ typ' tvs = unwrap (T.typ root tvs')
   where
     unwrap (Right x) = x
     root = fst . head $ tvs
-    tvs' = M.fromList tvs
+    tvs' = IM.fromList tvs
 
 spec :: Spec
 spec = do

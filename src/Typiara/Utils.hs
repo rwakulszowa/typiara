@@ -2,6 +2,7 @@
 
 module Typiara.Utils where
 
+import qualified Data.IntMap.Strict       as IM
 import qualified Data.List.NonEmpty       as NonEmpty
 import qualified Data.Map.Strict          as Map
 import qualified Data.Set                 as Set
@@ -124,6 +125,15 @@ mapKeysRejectConflicts f =
   where
     rejectConflict _ _ = Nothing
 
+-- | Map keys through `f`.
+-- Conflicts are detected by checking sizes - any conflict will make the size decrease.
+mapIKeysRejectConflicts :: (Int -> Int) -> IM.IntMap v -> Maybe (IM.IntMap v)
+mapIKeysRejectConflicts f m =
+  let m' = IM.mapKeys f m
+   in if IM.size m' == IM.size m
+        then Just m'
+        else Nothing
+
 pop :: (Ord k) => Map k v -> k -> Maybe (v, Map k v)
 pop m k =
   case m Map.!? k of
@@ -162,5 +172,17 @@ refresh bs t =
         Nothing ->
           let (b:bs') = bs
            in ((Map.insert a b seen, bs'), b)
+
+irefresh :: (Traversable t) => t Int -> (IM.IntMap Int, t Int)
+irefresh t =
+  let ((diff, _), t') = mapAccumL getOrTake (mempty, [0 ..]) t
+   in (diff, t')
+  where
+    getOrTake (seen, is) a =
+      case a `IM.lookup` seen of
+        (Just b) -> ((seen, is), b)
+        Nothing ->
+          let (b:is') = is
+           in ((IM.insert a b seen, is'), b)
 
 refreshVs zero = uncurry mzip . first (snd . refresh [zero ..]) . munzip

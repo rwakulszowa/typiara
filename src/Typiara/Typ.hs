@@ -8,6 +8,7 @@ import           Control.Monad.Zip   (munzip, mzip)
 import           Data.Bifunctor
 import           Data.Foldable       (toList)
 import           Data.Function
+import qualified Data.IntMap.Strict  as IM
 import qualified Data.Map.Strict     as M
 import           Data.Maybe
 import qualified Data.Set            as S
@@ -61,11 +62,11 @@ newtype TypError =
 typ ::
      (Functor t, Foldable t)
   => Int
-  -> M.Map Int (FT t Int)
+  -> IM.IntMap (FT t Int)
   -> Either TypError (Typ t)
 typ r tvs = Typ . refresh . reverse . fst <$> go r mempty
   where
-    get k = maybe (Left (KeyNotFound k)) Right (tvs M.!? k)
+    get k = maybe (Left (KeyNotFound k)) Right (tvs IM.!? k)
     children :: Foldable t => FT t Int -> [Int]
     children = toList
           -- Already seen node. Early return.
@@ -82,13 +83,13 @@ typ r tvs = Typ . refresh . reverse . fst <$> go r mempty
     insert k v (xs, seen) = ((k, v) : xs, S.insert k seen)
     refresh xs =
       let (as, bs) = munzip xs
-          (diff, as') = U.refresh [0 ..] as
-          bs' = fmap (diff M.!) <$> bs
+          (diff, as') = U.irefresh as
+          bs' = fmap (diff IM.!) <$> bs
        in mzip as' bs'
 
 fromTypeEnv (TE.TypeEnv tvs root) = typ root tvs
 
-intoTypeEnv t = TE.TypeEnv {TE.tvs = M.fromList (tvs t), TE.root = root t}
+intoTypeEnv t = TE.TypeEnv {TE.tvs = IM.fromList (tvs t), TE.root = root t}
 
 data FromEnumTreeError a
   = FromEnumTreeErr (TE.FromEnumTreeError a)
