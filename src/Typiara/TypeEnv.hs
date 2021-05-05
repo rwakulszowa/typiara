@@ -254,37 +254,29 @@ outputs t = go $ getRoot t
 -- This operation is performed when two separate types, represented as
 -- `TypeEnv`s are merged, e.g. when we know from one source that a type is both
 -- `a -> a -> a` and `Num -> b`.
+--
+-- The function performs more expensive transformations on the right argument.
+-- When used in a loop, make sure the left argument is used as the accumulator.
 unifyEnv ::
      (TypDef t, Functor t, Foldable t, Tagged t, Eq (t Int))
   => Int
   -> TypeEnv t
   -> TypeEnv t
   -> Either UnifyEnvError (TypeEnv t)
-unifyEnv leftIdToMerge (TypeEnv a aRoot) (TypeEnv b bRoot) =
-  let leftTvs = translate lfun a
-      rightTvs = translate rfun b
-      -- ^ Move items from each side to disjoint domains to avoid conflicts.
-      -- The operation is performed on a map, not a TypeEnv. Root information has
-      -- to be transformed below.
-      mergedTVs = leftTvs <> rightTvs
-      (mapping, refreshed) = refresh mergedTVs
-      maptv x = Utils.fromJustOrError "unifyEnv.maptv" $ mapping IM.!? x
-   in unifyVars
-        (lazyTypeEnv refreshed)
-        (maptv (lfun leftIdToMerge), maptv (rfun bRoot)) >>=
-      reconcile (maptv (lfun aRoot))
+unifyEnv aIdToMerge a b =
+  let (f, b') = translateBy (maxVar a + 1) b
+      -- ^ Shift b to a clean section of the domain to avoid conflicts.
+      -- a is left untouched. References to `b` should be mapped through `f`.
+      abtvs = tvs a <> tvs b'
+   in unifyVars (lazyTypeEnv abtvs) (aIdToMerge, root b') >>= reconcile (root a)
   where
-    lfun x = (-1 * x) - 1
-    rfun = id
-    -- | lfun and rfun should map respective arguments to disjoint domains.
-    -- In our case, there is an assumption that no valid typeenv contains positive keys.
-    -- Mapping one argument to negative ints satisfies the requirement.
-    -- Note the `-1 ` at the end - it takes care of overlapping `0`s.
-    -- TODO: translate b by (max a) - this will let us get rid of an explicit refresh step
-    translate f m =
-      Maybe.fromJust (fmap (fmap f) <$> Utils.mapIKeysRejectConflicts f m)
-    -- ^ Key mapping won't crash as long as the function is an annotation (adds
-    -- new data without dropping any).
+    maxVar = maxKey . tvs
+    translateBy x (TypeEnv tvs root) =
+      let tvs' = fmap (fmap f) . IM.mapKeysMonotonic f $ tvs
+          root' = f root
+       in (f, TypeEnv tvs' root')
+      where
+        f = (+ x)
 
 unifyEnvR a = unifyEnv (root a) a
 
@@ -304,7 +296,7 @@ newtype LazyTypeEnv t =
     { unLazyTypeEnv :: IM.IntMap (Either Link (FT t Int))
     }
 
-maxVar = fst . Utils.fromJustOrError "maxVar" . IM.lookupMax . unLazyTypeEnv
+maxKey = fst . Utils.fromJustOrError "maxKey" . IM.lookupMax
 
 lazyTypeEnv :: (Functor t) => TypeVarMap t -> LazyTypeEnv t
 lazyTypeEnv m = LazyTypeEnv (Right <$> m)
@@ -313,7 +305,7 @@ lazyTypeEnv m = LazyTypeEnv (Right <$> m)
 -- Returns the updated map and the generated id.
 insert :: LazyTypeEnv t -> FT t Int -> (Int, LazyTypeEnv t)
 insert lte@(LazyTypeEnv tv) t =
-  let newVar = succ (maxVar lte)
+  let newVar = succ (maxKey (unLazyTypeEnv lte))
       tv' = IM.insert newVar (Right t) tv
    in (newVar, LazyTypeEnv tv')
 

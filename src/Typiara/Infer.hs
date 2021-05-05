@@ -25,8 +25,8 @@ import           Typiara.FT          (FT (..))
 import qualified Typiara.Typ         as T
 import           Typiara.TypDef      (TypDef)
 import           Typiara.TypeEnv     (TypeEnv (..), UnifyEnvError (..),
-                                      buildFunEnv, clean, funT, nthArgId,
-                                      popArg, singleton, unifyEnv, unifyEnvR)
+                                      buildFunEnv, funT, nthArgId, popArg,
+                                      singleton, unifyEnv, unifyEnvR)
 
 import qualified Typiara.Utils       as Utils
 
@@ -137,15 +137,14 @@ inferApplication (fun :| args) = do
   let arity = length args
   appEnv <- unifyEnvR fun (buildFunEnv arity)
   -- Application shape allows us to deduce required arity for the function.
-  let cleanEnv = clean appEnv
   (result, _) <-
     foldlM
       (\(t, n) arg -> do
          t' <- handleNthApplication t n arg
          return (t', n + 1))
-      (cleanEnv, 0)
+      (appEnv, 0)
       args
-  return (clean result)
+  return result
   where
     handleNthApplication accT n argT = unifyEnv (nthArgId accT n) accT argT
 
