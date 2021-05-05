@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2f5c7247cdd203b28860212551b5e76e2e0afaa85289f660df904481ad397485
+-- hash: d9a597cfcee7d316a999cb0a301e3e07091c6fe7c59b9c470a34eef3a7b3d7f1
 
 name:           typiara
 version:        0.1.0.0
@@ -47,6 +47,7 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
+    , hashable
     , hspec
     , transformers
   default-language: Haskell2010
@@ -70,6 +71,7 @@ test-suite typiara-test
   build-depends:
       base >=4.7 && <5
     , containers
+    , hashable
     , hspec
     , transformers
     , typiara

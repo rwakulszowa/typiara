@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DeriveTraversable     #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -9,6 +10,8 @@ module Typiara.FT
   ) where
 
 import           Data.Data           (Data)
+import           Data.Hashable
+import           GHC.Generics
 import           Typiara.Data.Tagged (Tagged (..))
 import           Typiara.TypDef      (TypDef (..), UnifyError (..),
                                       UnifyResult (..))
@@ -22,7 +25,7 @@ data FT t v
   = F v v
   | T (t v)
   | Nil
-  deriving (Eq, Show, Read, Ord, Functor, Foldable, Traversable)
+  deriving (Eq, Show, Read, Ord, Functor, Foldable, Traversable, Generic)
 
 instance (Tagged t) => Tagged (FT t) where
   tag (F _ _) = "F"
@@ -32,6 +35,8 @@ instance (Tagged t) => Tagged (FT t) where
   fromTag "F" [a, b]      = Just (F a b)
   fromTag ('T':'.':ts) xs = T <$> fromTag ts xs
   fromTag _ _             = Nothing
+
+instance (Hashable (t v), Hashable v) => Hashable (FT t v)
 
 -- | Unify two FT types.
 -- Wrap user defined `unify` implementation with a handler for core types defined in `FT`.

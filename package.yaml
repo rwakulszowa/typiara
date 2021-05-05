@@ -24,6 +24,7 @@ dependencies:
 - containers
 - hspec
 - transformers
+- hashable
 
 library:
   source-dirs: src

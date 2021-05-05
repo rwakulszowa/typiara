@@ -8,6 +8,7 @@ import           Control.Monad.Zip   (munzip, mzip)
 import           Data.Bifunctor
 import           Data.Foldable       (toList)
 import           Data.Function
+import           Data.Hashable
 import qualified Data.IntMap.Strict  as IM
 import qualified Data.Map.Strict     as M
 import           Data.Maybe
@@ -48,6 +49,8 @@ instance (Eq (t Int)) => Eq (Typ t) where
 
 instance (Ord (t Int)) => Ord (Typ t) where
   compare = compare `on` unpack
+
+instance (Hashable (t Int)) => Hashable (Typ t)
 
 newtype TypError =
   KeyNotFound Int
