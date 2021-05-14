@@ -47,19 +47,16 @@ unifyFT ::
   -> Either UnifyError (FTUnifyResult t Int)
 -- FT types.
 -- Nils unify with anything.
-unifyFT Nil a = Right (FTUnifyResult a [])
-unifyFT a Nil = unifyFT Nil a
--- There is a link on either side. All variables are unified to the same ident, the result is linked.
-unifyFT (F a b) (F a' b')
-  | a == b || a' == b' =
-    Right (FTUnifyResult (F a a) [(a, b), (a, a'), (a, b')])
--- No links. Propagate pairwise, but do not introduce any links.
+unifyFT Nil a             = Right (FTUnifyResult a [])
+unifyFT a Nil             = unifyFT Nil a
+-- Propagate pairwise.
+-- If either F's items are linked, they will propagate to the other F.
 unifyFT (F a b) (F a' b') = Right (FTUnifyResult (F a b) [(a, a'), (b, b')])
 -- Typ t
-unifyFT (T a) (T b) = wrapResult <$> unify a b
+unifyFT (T a) (T b)       = wrapResult <$> unify a b
 -- Catchall.
 -- Matches only situation where the top level `FT` constructors are different.
-unifyFT x y = Left (ConflictingTypes (tag x) (tag y))
+unifyFT x y               = Left (ConflictingTypes (tag x) (tag y))
 
 -- | FT compatible wrapper for `UnifyResult`.
 data FTUnifyResult t v =
