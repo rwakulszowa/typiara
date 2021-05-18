@@ -1,5 +1,7 @@
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE UndecidableInstances  #-}
+{-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
 module Typiara.TypeEnv where
 
@@ -14,7 +16,7 @@ import           Data.Foldable                     (find, foldlM, foldrM,
 import           Data.Function                     (on)
 import qualified Data.IntMap.Strict                as IM
 import qualified Data.IntSet                       as IS
-import           Data.List                         (nub)
+import           Data.List                         (mapAccumR, nub)
 import           Data.List.NonEmpty                (NonEmpty ((:|)))
 import qualified Data.List.NonEmpty                as NonEmpty
 import qualified Data.Map.Strict                   as M
@@ -26,9 +28,9 @@ import           Data.Tuple                        (swap)
 import           Text.Read                         (readMaybe)
 
 import           Typiara.Data.Tagged               (Tagged (..))
-import           Typiara.Fix
 import           Typiara.FT                        (FT (..), FTUnifyResult (..),
                                                     unifyFT)
+import           Typiara.Fix
 import           Typiara.TypDef                    (TypDef (..),
                                                     UnifyError (..))
 import qualified Typiara.Utils                     as Utils
@@ -423,21 +425,54 @@ unifyVars ti (x, y) = go (follow' x, follow' y)
           let (v, te') = insert te t
            in Right (link x v . link y v $ te')
 
--- | `TypeEnv` representing a chain of functions.
-buildFunEnv :: Int -> TypeEnv t
-buildFunEnv arity =
-  let (t:ts) = generateFunctionTypes arity (succ root)
-   in TypeEnv (IM.fromList ((root, snd t) : ts)) root
+-- | `TypeEnv` representing a chain of unlinked functions.
+arityFun :: Int -> TypeEnv t
+arityFun arity = makeFun [[0 .. arity]]
+
+-- | Build a function of Fun and Nil nodes, where function shape is provided by the user.
+-- The user controls the ids used by the produced nodes - if multiple elements use
+-- the same id, the nodes will be linked.
+--
+-- NOTE: I *think* it's impossible to provide an invalid input (i.e. one that would form
+-- an illegal function, e.g. a cycle), because all leaves are Nils and all nodes are Funs.
+--
+-- For now, functions up to 2 levels deep are allowed. If need be, replace the [[ ]] container with a
+-- dedicated, tree-like input.
+makeFun :: [[Int]] -> TypeEnv t
+makeFun shape =
+  let (freeIds', funs) = mapAccumR genOne freeIds shape
+      (topFun, freeIds'') = funChain (root <$> funs) freeIds'
+   in TypeEnv (IM.fromList (topFun <> mconcat funs)) (root topFun)
   where
-    root = 0
-    generateFunctionTypes 0 v = [(v, Nil)]
-    -- ^ The last return value is a `Nil`.
-    generateFunctionTypes remaining v =
-      let vArg = succ v
-          vRet = succ vArg
-          node = (v, F vArg vRet)
+    root = fst . head -- By convention.
+    freeIds = [i | i <- [0 ..], i `IS.notMember` reservedIds]
+      where
+        reservedIds = mconcat (IS.fromList <$> shape)
+    genOne vs shape =
+      let (fun, vs') = genFun shape vs
+       in (vs', fun)
+    genFun :: [Int] -> [Int] -> ([(Int, FT t Int)], [Int])
+    -- Generate function nodes recursively, accumulating a map of nodes in the process.
+    -- The first item in returned list of nodes represents the current root.
+    genFun [v] freeVs = ([(v, Nil)], freeVs)
+    -- ^ Last item - no more functions to make.
+    -- Use the user provided id directly.
+    --
+    -- Build a function node.
+    -- Use a user provided id for the argument, and free ids for the remaining nodes.
+    genFun (vArg:vs) (vFun:freeVs) =
+      let (ret, freeVs') = genFun vs freeVs
+          vRet = root ret -- By convention.
           arg = (vArg, Nil)
-       in node : arg : generateFunctionTypes (remaining - 1) vRet
+          node = (vFun, F vArg vRet)
+       in (node : arg : ret, freeVs') -- Current root must be the head, by convention.
+    funChain :: [Int] -> [Int] -> ([(Int, _)], [Int])
+    -- Build a chain of functions, where all leaves are identified by provided ids.
+    -- Each newly created node takes a free id.
+    -- The result is not a valid function representation by itself. It must me concatenated
+    -- with a list including definitions of all provided ids.
+    -- It happens to be the same operation as generating a regular function.
+    funChain = genFun
 
 -- | Build a function `tA -> tB`, where the argument is stored under `a` and
 -- the result under `b`.

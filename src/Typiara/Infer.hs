@@ -25,7 +25,7 @@ import           Typiara.FT          (FT (..))
 import qualified Typiara.Typ         as T
 import           Typiara.TypDef      (TypDef)
 import           Typiara.TypeEnv     (TypeEnv (..), UnifyEnvError (..),
-                                      buildFunEnv, funT, nthArgId, popArg,
+                                      arityFun, funT, nthArgId, popArg,
                                       singleton, unifyEnv, unifyEnvR)
 
 import qualified Typiara.Utils       as Utils
@@ -46,6 +46,19 @@ ref = Right . Ref
 -- The result will have an arity of application + size of args.
 --
 -- In `x y -> Inc x`, `x y` are args, `Inc x` is the application.
+--
+-- NOTE: the core operation supported by the library is argumentless application.
+-- Certain operations available in the arg domain are lossy - more specifically,
+-- applying an argument at the n-th position by introducing placeholder `args` and then merging
+-- them back to the function will lose information about links, e.g.
+-- ```
+-- x => (a -> a -> a) | x  // this operation is a noop in the value domain
+-- == (a -> b -> b)        // but loses link information in the type domain
+-- != (a -> a -> a)
+-- ```
+-- Function flipping can be achieved by standard application of HOFs, without the need to introduce temporary args.
+--
+-- TODO: consider restricting the Expression type to disallow such operations.
 data Expression =
   Expression
     { args        :: [Arg]
@@ -135,7 +148,7 @@ inferApplication ::
 inferApplication (x NonEmpty.:| []) = Right x
 inferApplication (fun :| args) = do
   let arity = length args
-  appEnv <- unifyEnvR fun (buildFunEnv arity)
+  appEnv <- unifyEnvR fun (arityFun arity)
   -- Application shape allows us to deduce required arity for the function.
   (result, _) <-
     foldlM

@@ -109,6 +109,13 @@ singleton = U.fromRight . fromTypeEnv . TE.singleton
 fun :: (Functor t, Foldable t) => FT t Int -> FT t Int -> Typ t
 fun a b = Typ [(0, F 1 2), (1, a), (2, b)]
 
+-- | Function of arity `i`, where each argument is an unlinked Nil.
+emptyFun :: (Functor t, Foldable t) => Int -> Typ t
+emptyFun = U.fromRight . fromTypeEnv . TE.arityFun
+
+makeFun :: (Functor t, Foldable t) => [[Int]] -> Typ t
+makeFun = U.fromRight . fromTypeEnv . TE.makeFun
+
 -- | Merge two types together.
 -- This operation tells if there exists a set of types satisfying both types.
 -- `Left` if the two types are incompatible.

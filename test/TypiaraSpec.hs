@@ -10,7 +10,7 @@ import           Data.List.NonEmpty (NonEmpty (..))
 import           Data.Map           (Map, fromList)
 import           Data.Tree          (Tree (..))
 
-import           Typiara            (apply)
+import           Typiara            (FT (..), apply, applyAt)
 import           Typiara.Infer
 import           Typiara.SampleTyp
 import           Typiara.Typ
@@ -98,6 +98,34 @@ spec =
           (te
              (Node 's' [Node 't' [leaf 'a']])
              [('s', "T.Seq"), ('t', "T.Seq"), ('a', "T.Num")])
+    describe "applyAt" $ do
+      let applyAt' x i f = applyAt f x i
+      it "inc . head, regular application order" $
+        (pure compose >>= applyAt' inc 0 >>= applyAt' head 0) `shouldBe`
+        (Right . fromRight $ compose `apply` [inc, head])
+      it "inc . head, reverse application order" $
+        (pure compose >>= applyAt' head 1 >>= applyAt' inc 0) `shouldBe`
+        (Right . fromRight $ compose `apply` [inc, head])
+      it "Bool -> Num -> Str -> Nil" $ do
+        let t =
+              te
+                (Node
+                   'f'
+                   [ leaf 'a'
+                   , Node 'g' [leaf 'b', Node 'h' [leaf 'c', leaf 'd']]
+                   ])
+                [ ('f', "F")
+                , ('g', "F")
+                , ('h', "F")
+                , ('a', "T.Bool")
+                , ('b', "T.Num")
+                , ('c', "T.Str")
+                , ('d', "Nil")
+                ]
+        let s = te (leaf 'a') [('a', "T.Str")]
+        let b = te (leaf 'a') [('a', "T.Bool")]
+        (pure t >>= applyAt' s 2 >>= applyAt' int 1 >>= applyAt' b 0) `shouldBe`
+          Right (singleton Nil)
     describe "corner cases" $ do
       it "self merge" $
         -- The function will attempt to merge c with d, where d is already

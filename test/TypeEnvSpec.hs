@@ -41,6 +41,18 @@ spec = do
       let c = fromList [('a', "T.Seq")]
       (fromEnumTree s c :: Either (FromEnumTreeError Char) (TypeEnv SampleTyp)) `shouldBe`
         Left (ShapeConstraintsOutOfSync 'a')
+  describe "arityFun" $ do
+    it "singleton" $ arityFun 0 `shouldBe` te [(0, Nil)]
+    it "function" $
+      arityFun 2 `shouldBe`
+      te [(3, F 0 4), (4, F 1 2), (0, Nil), (1, Nil), (2, Nil)]
+  describe "makeFun" $ do
+    it "nested linked" $
+      shape (makeFun [[0, 1], [1, 2, 3], [0]] :: TypeEnv SampleTyp) `shouldBe`
+      shape
+        (te $
+         [(10, F 11 12), (11, F 0 1), (12, F 13 0), (13, F 1 14), (14, F 2 3)] <>
+         [(i, Nil) | i <- [0 .. 3]])
   describe "decompose" $ do
     it "tree" $ do
       let x = te [(0, F 1 2), (1, Nil), (2, T Num)]
