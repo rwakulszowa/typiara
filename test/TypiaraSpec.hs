@@ -10,7 +10,7 @@ import           Data.List.NonEmpty (NonEmpty (..))
 import           Data.Map           (Map, fromList)
 import           Data.Tree          (Tree (..))
 
-import           Typiara            (FT (..), apply, applyAt)
+import           Typiara            (FT (..), apply, applyAt, reorder)
 import           Typiara.Infer
 import           Typiara.SampleTyp
 import           Typiara.Typ
@@ -126,6 +126,11 @@ spec =
         let b = te (leaf 'a') [('a', "T.Bool")]
         (pure t >>= applyAt' s 2 >>= applyAt' int 1 >>= applyAt' b 0) `shouldBe`
           Right (singleton Nil)
+    describe "reorder" $ do
+      it "inc" $ reorder inc [0] `shouldBe` Just inc
+      it "const3" $ do
+        let t = (makeFun [[0, 1, 2, 0]] :: Typ SampleTyp)
+        reorder t [1, 2, 0] `shouldBe` Just (makeFun [[1, 2, 0, 0]])
     describe "corner cases" $ do
       it "self merge" $
         -- The function will attempt to merge c with d, where d is already
