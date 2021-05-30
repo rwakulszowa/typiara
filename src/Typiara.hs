@@ -12,6 +12,7 @@ module Typiara
   , Typ(..)
   , UnifyResult(..)
   , UnifyError(..)
+  , ApplyError(..)
   , Tagged(..)
   , fromEnumTree
   , singleton
@@ -26,26 +27,40 @@ import           Data.Map.Strict     (fromList)
 import           Data.Maybe          (fromJust)
 import           Typiara.Data.Tagged (Tagged (..))
 import           Typiara.FT          (FT (..))
-import           Typiara.Infer       (Expression (..), InferExpressionError,
-                                      arg, inferExpression, ref)
-import           Typiara.Typ         (Typ, arity, fromEnumTree, fun, makeFun,
-                                      merge, singleton)
+import           Typiara.Infer       (Expression (..),
+                                      InferExpressionError (..), arg,
+                                      inferExpression, ref)
+import           Typiara.Typ         (Typ, TypError, arity, fromEnumTree, fun,
+                                      makeFun, merge, singleton)
 import           Typiara.TypDef      (TypDef (..), UnifyError (..),
                                       UnifyResult (..))
+import           Typiara.TypeEnv     (UnifyEnvError)
+
+-- | A subset of expression inference errors.
+-- Other possible errors are internal and are not expected to happen when using this function.
+newtype ApplyError =
+  ApplyError UnifyEnvError
+  deriving (Eq, Show)
 
 -- | Apply args to a function in a single bulk operation.
 apply ::
      (TypDef t, Functor t, Foldable t, Tagged t, Eq (t Int))
   => Typ t
   -> [Typ t]
-  -> Either InferExpressionError (Typ t)
+  -> Either ApplyError (Typ t)
 apply f xs =
-  inferExpression (fromList ((f', f) : (xs' `zip` xs))) (applicationExpr f' xs')
+  first
+    mapErr
+    (inferExpression
+       (fromList ((f', f) : (xs' `zip` xs)))
+       (applicationExpr f' xs'))
   where
     n = length xs
     f' = ref "f"
     xs' = (\i -> ref ("x" ++ show i)) <$> [0 .. n - 1]
     applicationExpr f xs = Expression {args = [], application = f :| xs}
+    mapErr (UnifyEnvError e) = ApplyError e
+    mapErr e = error ("Unexpected application error: " ++ show e)
 
 -- | Apply an argument at a specified index.
 -- Builds a hoistping higher order function and apples it to the argument.
@@ -90,6 +105,6 @@ reorder t o =
     reorderT = makeFun [naturalOrder <> [a], o <> [a]]
 
 data ApplyAtError
-  = ApplyErr InferExpressionError
+  = ApplyErr ApplyError
   | BadArity Int Int
   deriving (Eq, Show)

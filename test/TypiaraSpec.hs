@@ -9,8 +9,7 @@ import           Test.Hspec
 import           Data.List.NonEmpty (NonEmpty (..))
 import           Data.Map           (Map, fromList)
 import           Data.Tree          (Tree (..))
-
-import           Typiara            (FT (..), apply, applyAt, reorder)
+import           Typiara
 import           Typiara.Infer
 import           Typiara.SampleTyp
 import           Typiara.Typ
@@ -90,7 +89,7 @@ spec =
       it "fix $ inc" $ (fix `apply` [inc]) `shouldBe` Right int
       it "fix $ head" $
         (fix `apply` [head]) `shouldBe`
-        (Left . UnifyEnvError . Cycle) ["T.Seq", "T.Seq", "F", "F"]
+        (Left . ApplyError . Cycle) ["T.Seq", "T.Seq", "F", "F"]
       it "cons . cons $ seq" $
         -- Validate nested generics inference.
         (compose `apply` [cons, cons, int]) `shouldBe`
@@ -148,4 +147,4 @@ spec =
                 [('a', "F"), ('b', "F"), ('c', "Nil"), ('d', "F"), ('e', "Nil")]
         let y = te (Node 'a' [leaf 'b', leaf 'b']) [('a', "F"), ('b', "Nil")]
         (x `apply` [y]) `shouldBe`
-          (Left . UnifyEnvError . Cycle) ["F", "F", "F", "F"]
+          (Left . ApplyError . Cycle) ["F", "F", "F", "F"]
