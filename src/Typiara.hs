@@ -5,6 +5,7 @@ module Typiara
   ( apply
   , applyAt
   , reorder
+  , reorderT
   , ApplyAtError
   , merge
   , TypDef(..)
@@ -90,15 +91,24 @@ reorder ::
   => Typ t
   -> [Int]
   -> Maybe (Typ t)
-reorder t o =
-  if sort o == naturalOrder
-    then Just $ unwrap $ apply reorderT [t]
-    else Nothing
+reorder t o = unwrap . (`apply` [t]) <$> reorderT o
   where
-    a = arity t
-    naturalOrder = [0 .. a - 1]
     unwrap (Right x) = x
     unwrap (Left e)  = error $ show ("Application failed", e)
+
+-- | Type representing a function that, after applying a function `f` to it,
+-- will produce `f` with reordered arguments.
+reorderT ::
+     (TypDef t, Functor t, Foldable t, Tagged t, Eq (t Int))
+  => [Int]
+  -> Maybe (Typ t)
+reorderT o =
+  if sort o == naturalOrder
+    then Just reorderT
+    else Nothing
+  where
+    a = length o
+    naturalOrder = [0 .. a - 1]
           -- Add the return value's index to both signatures.
           -- The caller is not allowed to move it forward, but the `makeFun` function
           -- expects it to be present.
