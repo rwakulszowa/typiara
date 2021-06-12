@@ -9,6 +9,7 @@ module Typiara.FT
   , FTUnifyResult(..)
   ) where
 
+import           Data.Bifunctor      (second)
 import           Data.Data           (Data)
 import           Data.Hashable
 import           GHC.Generics
@@ -47,11 +48,11 @@ unifyFT ::
   -> Either UnifyError (FTUnifyResult t Int)
 -- FT types.
 -- Nils unify with anything.
-unifyFT Nil a             = Right (FTUnifyResult a [])
+unifyFT Nil a             = Right (FTUnifyResult a [] [])
 unifyFT a Nil             = unifyFT Nil a
 -- Propagate pairwise.
 -- If either F's items are linked, they will propagate to the other F.
-unifyFT (F a b) (F a' b') = Right (FTUnifyResult (F a b) [(a, a'), (b, b')])
+unifyFT (F a b) (F a' b') = Right (FTUnifyResult (F a b) [(a, a'), (b, b')] [])
 -- Typ t
 unifyFT (T a) (T b)       = wrapResult <$> unify a b
 -- Catchall.
@@ -61,10 +62,15 @@ unifyFT x y               = Left (ConflictingTypes (tag x) (tag y))
 -- | FT compatible wrapper for `UnifyResult`.
 data FTUnifyResult t v =
   FTUnifyResult
-    { ftUnified         :: FT t v
-    , ftTypeVarsToUnify :: [(v, v)]
+    { ftUnified          :: FT t v
+    , ftTypeVarsToUnify  :: [(v, v)]
+    , ftConstraintsToAdd :: [(v, FT t v)]
     }
   deriving (Eq, Show, Ord)
 
-wrapResult (UnifyResult u t) =
-  FTUnifyResult {ftUnified = T u, ftTypeVarsToUnify = t}
+wrapResult (UnifyResult u t c) =
+  FTUnifyResult
+    { ftUnified = T u
+    , ftTypeVarsToUnify = t
+    , ftConstraintsToAdd = second T <$> c
+    }

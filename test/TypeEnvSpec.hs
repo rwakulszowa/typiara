@@ -3,7 +3,7 @@ module TypeEnvSpec
   ) where
 
 import qualified Data.IntMap       as IM
-import           Data.Map
+import           Data.Map          (fromList)
 import           Data.Tree
 import           Test.Hspec
 import           Typiara.FT
@@ -13,6 +13,9 @@ import           Typiara.TypeEnv
 -- | Build a TypeEnv. The first item is assumed to be the root.
 te :: [(Int, FT SampleTyp Int)] -> TypeEnv SampleTyp
 te tvs = TypeEnv {tvs = IM.fromList tvs, root = fst (head tvs)}
+
+seq :: FT SampleTyp Int -> TypeEnv SampleTyp
+seq t = te [(0, T (Seq 1)), (1, t)]
 
 spec :: Spec
 spec = do
@@ -125,3 +128,17 @@ spec = do
         Node
           (0, "F")
           [Node (1, "Nil") [], Node (2, "T.Seq") [Node (3, "T.Num") []]]
+    it "Nil constraint, 0" $ do
+      let x = singleton Nil
+      let y = singleton (T SampleConstraint)
+      (shape <$> unifyEnv 0 x y) `shouldBe` Right (shape y)
+    it "(constr -> constr) Num, 1" $ do
+      let x = funT (1, T SampleConstraint) (1, T SampleConstraint)
+      let y = singleton (T Num)
+      (shape <$> unifyEnv 1 x y) `shouldBe`
+        Right (shape (funT (0, T Num) (0, T Num)))
+    it "(constr -> constr) (Seq Num), 1; constraint propagation" $ do
+      let x = funT (1, T SampleConstraint) (1, T SampleConstraint)
+      let y = te [(0, T (Seq 1)), (1, Nil)]
+      (shape <$> unifyEnv 1 x y) `shouldBe`
+        Right (shape (te [(0, F 1 1), (1, T (Seq 2)), (2, T SampleConstraint)]))

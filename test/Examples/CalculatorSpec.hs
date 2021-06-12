@@ -29,7 +29,7 @@ data CalculatorT a =
   deriving (Eq, Show, Read, Ord, Functor, Foldable, Traversable, Data, Typeable)
 
 instance TypDef CalculatorT where
-  unify CalcInt CalcInt = Right (UnifyResult CalcInt [])
+  unify CalcInt CalcInt = Right (UnifyResult CalcInt [] [])
 
 instance Tagged CalculatorT where
   tag CalcInt = "CalcInt"

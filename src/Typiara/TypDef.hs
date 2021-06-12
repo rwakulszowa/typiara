@@ -16,6 +16,8 @@ import           Typiara.Data.Tagged
 -- function types.
 --
 -- `unify` defines how leaf types merge together.
+-- TODO: wrap the `Int` with an unconstructible type - this should guarantee the user
+-- cannot make up indices in `unify`.
 class TypDef t where
   unify :: t Int -> t Int -> Either UnifyError (UnifyResult t Int)
 
@@ -30,8 +32,17 @@ unifyEq x y =
 -- to be merged into one.
 data UnifyResult t v =
   UnifyResult
-    { unified         :: t v
-    , typeVarsToUnify :: [(v, v)]
+    -- The direct result of merging two argument types.
+    -- Usually some combination of the two.
+    { unified          :: t v
+    -- Child vars that should be unified recursively.
+    -- Unification of `T a, T b` would require recursively unifying `a` and `b`.
+    , typeVarsToUnify  :: [(v, v)]
+    -- Constraints to add to a given variable. Allows lowering constraints from
+    -- the parent to the child in a trait-like system.
+    -- If `T a` is merged with constraint `C`, and the system defines that
+    -- `T a < C :- a < C`, the `C` constraint can be moved to `a`.
+    , constraintsToAdd :: [(v, t v)]
     }
   deriving (Eq, Show, Ord)
 

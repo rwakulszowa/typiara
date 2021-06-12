@@ -311,6 +311,13 @@ insert lte@(LazyTypeEnv tv) t =
       tv' = IM.insert newVar (Right t) tv
    in (newVar, LazyTypeEnv tv')
 
+insertMany :: LazyTypeEnv t -> [FT t Int] -> ([Int], LazyTypeEnv t)
+insertMany x = swap . mapAccumL f x
+  where
+    f te t =
+      let (v, te') = insert te t
+       in (te', v)
+
 -- | Replace value stored under `src` with a link pointing to `dst`.
 -- Error if `src` is not found in the map.
 -- Value stored under `src` is dropped. The caller is responsible for using any
@@ -401,8 +408,8 @@ unifyVars ti (x, y) = go (follow' x, follow' y)
     go (x, y) = do
       tx <- canonicalize <$> ti `find` x
       ty <- canonicalize <$> ti `find` y
-      (FTUnifyResult ut vs) <- first UnifyError (tx `unifyFT` ty)
-      pure ti >>= unifySingleType ut >>= foldUnify vs
+      (FTUnifyResult ut vs cs) <- first UnifyError (tx `unifyFT` ty)
+      pure ti >>= unifySingleType ut >>= foldUnify vs >>= addConstraints cs
       where
         find t k = do
           found <- Utils.maybeError (KeyNotFound k) (unLazyTypeEnv t IM.!? k)
@@ -424,6 +431,14 @@ unifyVars ti (x, y) = go (follow' x, follow' y)
         unifySingleType t te =
           let (v, te') = insert te t
            in Right (link x v . link y v $ te')
+        -- Add new constraints to existing ids, by:
+        -- 1. creating fresh nodes bounded by the constraints
+        -- 2. linking said nodes with target nodes (provided by the caller)
+        addConstraints vcs te =
+          let (vs, cs) = munzip vcs
+              (vs', te') = insertMany te cs
+              vvs' = mzip vs vs'
+           in foldUnify vvs' te'
 
 -- | `TypeEnv` representing a chain of unlinked functions.
 arityFun :: Int -> TypeEnv t

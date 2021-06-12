@@ -19,13 +19,23 @@ data SampleTyp a
   | Bool
   | Num
   | Str
+  | SampleConstraint -- All types except for `Bool` satisfy the constraint.
   deriving (Eq, Show, Read, Ord, Functor, Foldable, Traversable, Data, Typeable)
 
-instance TypDef SampleTyp where
-  unify (Seq a) (Seq b) = Right (UnifyResult (Seq a) [(a, b)])
+instance TypDef SampleTyp
+  -- Constraints. Upon unifying with a base type, a constraint is either consumed or
+  -- propagated downwards.
+                           where
+  unify SampleConstraint (Seq a) =
+    Right (UnifyResult (Seq a) [] [(a, SampleConstraint)])
+  unify SampleConstraint Bool =
+    Left (ConflictingTypes (tag SampleConstraint) (tag Bool))
+  unify SampleConstraint a = Right (UnifyResult a [] [])
+  -- Base types. Unifiable only if both sides are of the same type.
+  unify (Seq a) (Seq b) = Right (UnifyResult (Seq a) [(a, b)] [])
   unify x y =
     if x == y
-      then Right (UnifyResult x [])
+      then Right (UnifyResult x [] [])
       else Left (ConflictingTypes (tag x) (tag y))
 
 instance Tagged SampleTyp where
