@@ -22,6 +22,7 @@ import qualified Data.List.NonEmpty                as NonEmpty
 import qualified Data.Map.Strict                   as M
 import qualified Data.Maybe                        as Maybe
 import qualified Data.Set                          as Set
+import qualified Data.Set.Ordered                  as OSet
 import           Data.Traversable                  (mapAccumL)
 import qualified Data.Tree                         as Tree
 import           Data.Tuple                        (swap)
@@ -52,14 +53,15 @@ type TypeVarMap t = IM.IntMap (FT t Int)
 -- Bail upon finding the same node id twice in one path.
 findCycles :: (Foldable t) => Int -> IM.IntMap (t Int) -> Maybe [Int]
 findCycles r m =
-  case go [] r of
+  case go OSet.empty r of
     Left cycle -> Just cycle
     Right ()   -> Nothing
   where
     get' = Utils.fromJustOrError "findCycles.get'" . (m IM.!?)
     go path v
-      | v `elem` path = Left (v : path)
-      | otherwise = () <$ sequence ([go (v : path) vc | vc <- toList (get' v)])
+      | v `OSet.member` path = Left (v : toList path)
+      | otherwise =
+        () <$ sequence ([go (v OSet.|< path) vc | vc <- toList (get' v)])
 
 -- | Map `a`s to `b`s.
 -- `b` *must* generate unique values on each `succ` call.
