@@ -74,7 +74,6 @@ data Expression =
 data InferExpressionError
   = MissingTypes (NonEmpty.NonEmpty (Either Arg Ref))
   | UnifyEnvError UnifyEnvError
-  | RebuildError UnifyEnvError
   | TypErr T.TypError
   deriving (Eq, Show)
 
@@ -95,11 +94,15 @@ inferExpression types (Expression args application) = do
     first UnifyEnvError (inferRefApplication getRefT application)
   let getInferredRefT k =
         Maybe.fromMaybe (singleton Nil) (inferredRefTs Map.!? Left k)
-  retEnv <- first RebuildError (rebuildExpr (getInferredRefT <$> args) retT)
+  let retEnv = rebuildExpr retT (getInferredRefT <$> args)
   first TypErr (T.fromTypeEnv retEnv)
   where
     typeEnvs = T.intoTypeEnv <$> types
     dedup = Set.fromList . toList
+    -- Given a return type and types of arguments, rebuild a function args -> ret.
+    -- The result will have arity of at least `length args`.
+    -- `rebuildExpr [Str, Num] Num` == `Str -> Num -> Num`.
+    rebuildExpr = foldr funT
 
 inferRefApplication getRefT app@(funRef :| argRefs) = do
   funT <- inferApplication (getRefT <$> app)
@@ -109,18 +112,6 @@ inferRefApplication getRefT app@(funRef :| argRefs) = do
   unifiedRefTs <-
     Utils.mapFromListWithKeyM (const unifyEnvR) ((funRef, funT) : argTs)
   return (retT, unifiedRefTs)
-
--- | Given a return type and types of arguments, rebuild a function args -> ret.
--- The result will have arity of at least `length args`.
--- `rebuildExpr [Str, Num] Num` == `Str -> Num -> Num`.
-rebuildExpr args ret = foldrM f ret args
-  where
-    f arg ret =
-      pure (funT (argV, Nil) (retV, Nil)) >>= merge' argV arg >>=
-      merge' retV ret
-    argV = toEnum 0
-    retV = succ argV
-    merge' v t baseT = unifyEnv v baseT t
 
 --
 -- | Application inference.

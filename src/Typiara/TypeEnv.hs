@@ -71,6 +71,14 @@ refresh t =
   let mapping = IM.fromList $ Set.elems (allVars t) `zip` [0 ..]
    in (mapping, fmapTVs (mapping IM.!) t)
 
+-- | Shift both keys and values of values by a constant offset.
+-- Used when merging two `TypeEnv`s - one of them is shifted to avoid key
+-- overlap.
+shift :: (Functor t) => Int -> TypeVarMap t -> TypeVarMap t
+shift x = fmap (fmap f) . IM.mapKeysMonotonic f
+  where
+    f = (+ x)
+
 -- | Dig all stored type variable names.
 -- TODO: if it's not allowed for ks and vs to be out of sync, looping through
 -- keys should be enough
@@ -268,21 +276,21 @@ unifyEnv ::
   -> TypeEnv t
   -> Either UnifyEnvError (TypeEnv t)
 unifyEnv aIdToMerge a b =
-  let (f, b') = translateBy (maxVar a + 1) b
+  let b' = shiftTE (maxVar a + 1) b
       -- ^ Shift b to a clean section of the domain to avoid conflicts.
       -- a is left untouched. References to `b` should be mapped through `f`.
       abtvs = tvs a <> tvs b'
    in unifyVars (lazyTypeEnv abtvs) (aIdToMerge, root b') >>= reconcile (root a)
   where
     maxVar = maxKey . tvs
-    translateBy x (TypeEnv tvs root) =
-      let tvs' = fmap (fmap f) . IM.mapKeysMonotonic f $ tvs
-          root' = f root
-       in (f, TypeEnv tvs' root')
-      where
-        f = (+ x)
 
 unifyEnvR a = unifyEnv (root a) a
+
+shiftTE :: (Functor t) => Int -> TypeEnv t -> TypeEnv t
+shiftTE x (TypeEnv tvs root) =
+  let tvs' = shift x tvs
+      root' = root + x
+   in TypeEnv tvs' root'
 
 -- | Lazily resolved type variable mapping to another variable.
 -- When replacing a type variable `a` with a variable `b` in the whole environment,
@@ -491,18 +499,17 @@ makeFun shape =
     -- It happens to be the same operation as generating a regular function.
     funChain = genFun
 
--- | Build a function `tA -> tB`, where the argument is stored under `a` and
--- the result under `b`.
-funT :: (Int, FT t Int) -> (Int, FT t Int) -> TypeEnv t
-funT (a, tA) (b, tB) = TypeEnv (IM.fromList [(r, F a b), (a, tA), (b, tB)]) r
+-- | Build a function (a -> b), where both a and b are full `TypeEnv`s.
+funT :: Functor t => TypeEnv t -> TypeEnv t -> TypeEnv t
+funT a b = TypeEnv (fenv r (root a) (root b') <> tvs a <> tvs b') r
   where
-    r = Maybe.fromJust $ find (\x -> x /= a && x /= b) [0 ..]
+    aoffset = maxKey (tvs a) + 1
+    b' = shiftTE aoffset b
+    r = maxKey (tvs b') + 1
+    fenv r a b = IM.singleton r (F a b)
 
--- | Same as `funT`, except ids are generated automatically.
-funT' tA tB =
-  let a = toEnum 0
-      b = succ a
-   in funT (a, tA) (b, tB)
+-- | Same as `funT`, except arguments are single constraints.
+funT' tA tB = funT (singleton tA) (singleton tB)
 
 -- | Traverse the tree, returning n'th return node.
 -- Will crash if `arity < n`.

@@ -114,7 +114,7 @@ spec = do
     describe "negative" $ do
       it "(Num -> Num) | Str" $ do
         let ts =
-              [(ref "f", T.fun (T Num) (T Num)), (ref "a", singleton' (T Str))]
+              [(ref "f", T.fun' (T Num) (T Num)), (ref "a", singleton' (T Str))]
         let expr = Expression {args = [], application = ref "f" :| [ref "a"]}
         inferExpression ts expr `shouldBe`
           Left (UnifyEnvError (UnifyError (ConflictingTypes "Num" "Str")))

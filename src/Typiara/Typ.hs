@@ -106,8 +106,12 @@ singleton :: (Functor t, Foldable t) => FT t Int -> Typ t
 singleton = U.fromRight . fromTypeEnv . TE.singleton
 
 -- | Function `a -> b`
-fun :: (Functor t, Foldable t) => FT t Int -> FT t Int -> Typ t
-fun a b = Typ [(0, F 1 2), (1, a), (2, b)]
+fun :: (Functor t, Foldable t) => Typ t -> Typ t -> Typ t
+fun a b = U.fromRight $ fromTypeEnv (TE.funT (intoTypeEnv a) (intoTypeEnv b))
+
+-- | Same as `fun`, except arguments are single constraints.
+fun' :: (Functor t) => FT t Int -> FT t Int -> Typ t
+fun' a b = Typ [(0, F 1 2), (1, a), (2, b)]
 
 -- | Function of arity `i`, where each argument is an unlinked Nil.
 emptyFun :: (Functor t, Foldable t) => Int -> Typ t

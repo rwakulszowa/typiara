@@ -133,12 +133,12 @@ spec = do
       let y = singleton (T SampleConstraint)
       (shape <$> unifyEnv 0 x y) `shouldBe` Right (shape y)
     it "(constr -> constr) Num, 1" $ do
-      let x = funT (1, T SampleConstraint) (1, T SampleConstraint)
+      let x = te [(0, F 1 1), (1, T SampleConstraint)]
       let y = singleton (T Num)
       (shape <$> unifyEnv 1 x y) `shouldBe`
-        Right (shape (funT (0, T Num) (0, T Num)))
+        Right (shape (te [(0, F 1 1), (1, T Num)]))
     it "(constr -> constr) (Seq Num), 1; constraint propagation" $ do
-      let x = funT (1, T SampleConstraint) (1, T SampleConstraint)
+      let x = te [(0, F 1 1), (1, T SampleConstraint)]
       let y = te [(0, T (Seq 1)), (1, Nil)]
       (shape <$> unifyEnv 1 x y) `shouldBe`
         Right (shape (te [(0, F 1 1), (1, T (Seq 2)), (2, T SampleConstraint)]))
