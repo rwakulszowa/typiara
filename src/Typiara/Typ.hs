@@ -149,3 +149,7 @@ outputs = TE.outputs . intoTypeEnv
 
 arity :: Typ t -> Int
 arity = length . outputs
+
+-- | Total number of nodes in the tree.
+size :: (Foldable t, Tagged t) => Typ t -> Int
+size = length . TE.shape . intoTypeEnv

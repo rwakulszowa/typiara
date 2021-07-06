@@ -2,7 +2,7 @@ module TypSpec
   ( spec
   ) where
 
-import           Data.IntMap
+import qualified Data.IntMap       as IM
 import qualified Data.Set          as S
 import           Data.Tree
 import           Test.Hspec
@@ -16,7 +16,7 @@ t tvs = unwrap (typ root tvs')
   where
     unwrap (Right x) = x
     root = fst (head tvs)
-    tvs' = fromList tvs
+    tvs' = IM.fromList tvs
 
 spec :: Spec
 spec = do
@@ -40,3 +40,10 @@ spec = do
       let x = t [(0, F 1 2), (1, T Num), (2, T Num)]
       let y = t [(0, F 1 1), (1, T Num)]
       x == y `shouldBe` False
+  describe "Size" $ do
+    it "unlinked" $ do
+      let x = t [(0, F 1 2), (1, T Num), (2, Nil)]
+      size x `shouldBe` 3
+    it "linked" $ do
+      let x = t [(0, F 1 1), (1, Nil)]
+      size x `shouldBe` 3
