@@ -521,6 +521,7 @@ nthArgId t n =
    in arg
 
 -- | Decompose the object into standalone arg and fun pieces.
+popArg :: (Foldable t) => TypeEnv t -> (TypeEnv t, TypeEnv t)
 popArg typeInfo =
   let (F argId retId) = nthFunNode typeInfo 0
       pick' = pick typeInfo

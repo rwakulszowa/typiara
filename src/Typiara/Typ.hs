@@ -153,3 +153,9 @@ arity = length . outputs
 -- | Total number of nodes in the tree.
 size :: (Foldable t, Tagged t) => Typ t -> Int
 size = length . TE.shape . intoTypeEnv
+
+-- | Decompose a function into (arg, ret) pair.
+-- Error if called on a 0-arity object.
+popArg :: (Functor t, Foldable t) => Typ t -> (Typ t, Typ t)
+popArg = bimap fromTypeEnv' fromTypeEnv' . TE.popArg . intoTypeEnv
+    where fromTypeEnv' = U.fromRight . fromTypeEnv
