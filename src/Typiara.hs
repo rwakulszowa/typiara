@@ -8,6 +8,7 @@ module Typiara
   , reorderT
   , ApplyAtError
   , merge
+  , mergeNth
   , popArg
   , TypDef(..)
   , FT(..)
@@ -33,7 +34,8 @@ import           Typiara.Infer       (Expression (..),
                                       InferExpressionError (..), arg,
                                       inferExpression, ref)
 import           Typiara.Typ         (Typ, TypError, arity, fromEnumTree, fun,
-                                      makeFun, merge, singleton, popArg)
+                                      makeFun, merge, mergeNth, popArg,
+                                      singleton)
 import           Typiara.TypDef      (TypDef (..), UnifyError (..),
                                       UnifyResult (..))
 import           Typiara.TypeEnv     (UnifyEnvError)

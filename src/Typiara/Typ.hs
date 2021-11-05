@@ -19,6 +19,7 @@ import           GHC.Generics
 import           Typiara.Data.Tagged (Tagged)
 import           Typiara.FT          (FT (..))
 import           Typiara.TypDef
+import           Typiara.TypeEnv     (nthNodeId)
 import qualified Typiara.TypeEnv     as TE
 import qualified Typiara.Utils       as U
 
@@ -123,15 +124,30 @@ makeFun = U.fromRight . fromTypeEnv . TE.makeFun
 -- | Merge two types together.
 -- This operation tells if there exists a set of types satisfying both types.
 -- `Left` if the two types are incompatible.
+--
+-- Allows merging arbitrary nodes. Merging a non-root allows fixing the return
+-- type, without consuming the arguments.
+mergeNth ::
+     (Functor t, Foldable t, TypDef t, Tagged t, Eq (t Int))
+  => Int
+  -> Typ t
+  -> Typ t
+  -> Either MergeError (Typ t)
+mergeNth n x y = fromTypeEnv' <$> TE.unifyEnv xNodeId xTE yTE
+  where
+    xTE = intoTypeEnv x
+    yTE = intoTypeEnv y
+    xNodeId = nthNodeId xTE n
+    fromTypeEnv' =
+      either (\e -> error $ "merge.fromTypeEnv" ++ show e) id . fromTypeEnv
+
+-- | Merge two types at root positions.
 merge ::
      (Functor t, Foldable t, TypDef t, Tagged t, Eq (t Int))
   => Typ t
   -> Typ t
   -> Either MergeError (Typ t)
-merge x y = fromTypeEnv' <$> TE.unifyEnvR (intoTypeEnv x) (intoTypeEnv y)
-  where
-    fromTypeEnv' =
-      either (\e -> error $ "merge.fromTypeEnv" ++ show e) id . fromTypeEnv
+merge = mergeNth 0
 
 type MergeError = TE.UnifyEnvError
 
@@ -158,4 +174,5 @@ size = length . TE.shape . intoTypeEnv
 -- Error if called on a 0-arity object.
 popArg :: (Functor t, Foldable t) => Typ t -> (Typ t, Typ t)
 popArg = bimap fromTypeEnv' fromTypeEnv' . TE.popArg . intoTypeEnv
-    where fromTypeEnv' = U.fromRight . fromTypeEnv
+  where
+    fromTypeEnv' = U.fromRight . fromTypeEnv

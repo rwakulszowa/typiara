@@ -516,6 +516,14 @@ funT' tA tB = funT (singleton tA) (singleton tB)
 nthFunNode :: TypeEnv t -> Int -> FT t Int
 nthFunNode t n = outputs t !! n
 
+-- | Traverse the tree, returning n'th node.
+-- Will crash if `arity < n - 1`.
+nthNodeId :: TypeEnv t -> Int -> Int
+nthNodeId t 0 = root t
+nthNodeId t n =
+  let (F _ ret) = nthFunNode t (n - 1)
+   in ret
+
 nthArgId t n =
   let (F arg _) = nthFunNode t n
    in arg

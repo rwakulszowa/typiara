@@ -40,6 +40,11 @@ spec =
             [('f', "F"), ('s', "T.Seq"), ('a', "Nil")]
     -- a -> a
     let id = te (Node 'f' [leaf 'a', leaf 'a']) [('f', "F"), ('a', "Nil")]
+    -- a -> a -> a
+    let mappend =
+          te
+            (Node 'f' [leaf 'a', Node 'g' [leaf 'a', leaf 'a']])
+            [('f', "F"), ('g', "F"), ('a', "Nil")]
     -- a -> [a]
     let cons =
           te
@@ -125,6 +130,22 @@ spec =
         let b = te (leaf 'a') [('a', "T.Bool")]
         (pure t >>= applyAt' s 2 >>= applyAt' int 1 >>= applyAt' b 0) `shouldBe`
           Right (singleton Nil)
+    describe "mergeNth" $ do
+      it "head :: [a] -> Num" $
+        -- Fix the last return type.
+        mergeNth 1 head int `shouldBe`
+        Right
+          (te
+             (Node 'f' [Node 's' [leaf 'a'], leaf 'a'])
+             [('f', "F"), ('s', "T.Seq"), ('a', "T.Num")])
+      it "mappend :: a -> Num -> Num" $
+        -- Fix an intermediate return type (i.e. the return type of a partially
+        -- applied function).
+        mergeNth 1 mappend inc `shouldBe`
+        Right
+          (te
+             (Node 'f' [leaf 'a', Node 'g' [leaf 'a', leaf 'a']])
+             [('f', "F"), ('g', "F"), ('a', "T.Num")])
     describe "reorder" $ do
       it "inc" $ reorder inc [0] `shouldBe` Just inc
       it "const3" $ do
