@@ -10,6 +10,7 @@ module Typiara
   , merge
   , mergeNth
   , popArg
+  , popArgs
   , TypDef(..)
   , FT(..)
   , Typ(..)
@@ -34,7 +35,7 @@ import           Typiara.Infer       (Expression (..),
                                       InferExpressionError (..), arg,
                                       inferExpression, ref)
 import           Typiara.Typ         (Typ, TypError, arity, fromEnumTree, fun,
-                                      makeFun, merge, mergeNth, popArg,
+                                      makeFun, merge, mergeNth, popArg, popArgs,
                                       singleton)
 import           Typiara.TypDef      (TypDef (..), UnifyError (..),
                                       UnifyResult (..))

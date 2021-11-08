@@ -146,6 +146,12 @@ spec =
           (te
              (Node 'f' [leaf 'a', Node 'g' [leaf 'a', leaf 'a']])
              [('f', "F"), ('g', "F"), ('a', "T.Num")])
+    describe "popArgs" $ do
+      it "inc" $ popArgs inc `shouldBe` [int]
+      it "id" $ popArgs id `shouldBe` [singleton Nil]
+      it "compose" $
+        popArgs compose `shouldBe`
+        [makeFun [[0, 1]], makeFun [[0, 1]], singleton Nil]
     describe "reorder" $ do
       it "inc" $ reorder inc [0] `shouldBe` Just inc
       it "const3" $ do

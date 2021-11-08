@@ -176,3 +176,18 @@ popArg :: (Functor t, Foldable t) => Typ t -> (Typ t, Typ t)
 popArg = bimap fromTypeEnv' fromTypeEnv' . TE.popArg . intoTypeEnv
   where
     fromTypeEnv' = U.fromRight . fromTypeEnv
+
+-- | Pop args in order, until a non-F node is encountered.
+-- Note, that some information is lost in the process - links between variables
+-- are broken.
+-- To be used as a helper - it may make it easier to tell what individual
+-- arguments are expected at certain positions, but actual type application
+-- should be performed on the original type.
+popArgs :: (Functor t, Foldable t) => Typ t -> [Typ t]
+popArgs t = go (arity t) (intoTypeEnv t)
+  where
+    go 0 _ = []
+    go n te =
+      let (arg, ret) = TE.popArg te
+       in fromTypeEnv' arg : go (n - 1) ret
+    fromTypeEnv' = U.fromRight . fromTypeEnv
